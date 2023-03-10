@@ -98,12 +98,44 @@ int main() {
 		std::cout << "Failed to link shaders: " << std::endl << infoLog << std::endl;
 	}
 
+	glDeleteShader(vertexShader);
+	glDeleteShader(fragmentShader);
+
+
+	//vertex array
+	float vertices[] = {
+		0.0f, 0.5f, 0.0f,
+		0.5f, -0.5f, 0.0f,
+		-0.5f, -0.5f, 0.0f
+	};
+
+	// VAO, VBO
+	unsigned int VAO, VBO;
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+
+	// bind VAO 
+	glBindVertexArray(VAO);
+
+	// bind VBO
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //GL_DYNAMIC_DRAW = change every frame
+
+	//set attribute pointer
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
 	while (!glfwWindowShouldClose(window)) {
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 		//render
 		glClearColor(0.8f, 0.6f, 0.1f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+
+		//draw shape
+		glBindVertexArray(VAO);
+		glUseProgram(shaderProgram);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 
 		processInput(window);
