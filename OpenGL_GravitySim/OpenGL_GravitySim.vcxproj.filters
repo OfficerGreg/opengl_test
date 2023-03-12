@@ -21,14 +21,21 @@
     <ClCompile Include="src\stb.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Shader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="src\shaders\fragment_core.glsl" />
     <None Include="src\shaders\vertex_core.glsl" />
+    <None Include="src\shaders\fragment_core2.glsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\include\stb_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\include\Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

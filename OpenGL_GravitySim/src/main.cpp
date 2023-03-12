@@ -1,11 +1,9 @@
-#include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include <fstream>
-#include <sstream>
-#include <streambuf>
-#include <string>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include "include/Shader.h"
 
 //resize window
 void framebuff_size_callback(GLFWwindow* window, int width, int height);
@@ -13,16 +11,13 @@ void framebuff_size_callback(GLFWwindow* window, int width, int height);
 //I/O handling
 void processInput(GLFWwindow* window);
 
-//load shaders
-std::string loadShaderSrc(const char* filename);
-
-
 
 int main() {
 	int success;
 	char infoLog[512];
 
 	glfwInit();
+	glfwWindowHint(GLFW_SAMPLES, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -51,68 +46,29 @@ int main() {
 	/*
 		shaders
 	*/
+	Shader shader("src/shaders/vertex_core.glsl", "src/shaders/fragment_core.glsl");
+	Shader shader2("src/shaders/vertex_core.glsl", "src/shaders/fragment_core2.glsl");
+	
 
-	//compile vertex shader
-	unsigned int vertexShader;
-	vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	std::string vertShaderSrc = loadShaderSrc("src/shaders/vertex_core.glsl");
-	const GLchar* vertShader = vertShaderSrc.c_str();
-	glShaderSource(vertexShader, 1, &vertShader, NULL);
-	glCompileShader(vertexShader);
-
-	//vertex error handling
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-	if (!success) {
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cout << "Error with vertex shader compilation: " << std::endl << infoLog << std::endl;
-	}
-
-
-	//compile fragment shader
-	unsigned int fragmentShader;
-	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	std::string fragShaderSrc = loadShaderSrc("src/shaders/fragment_core.glsl");
-	const GLchar* fragShader = fragShaderSrc.c_str();
-	glShaderSource(fragmentShader, 1, &fragShader, NULL);
-	glCompileShader(fragmentShader);
-
-	//fragment error handling
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-	if (!success) {
-		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-		std::cout << "Error with fragment shader compilation: " << std::endl << infoLog << std::endl;
-	}
-
-	//shader linking
-	unsigned int shaderProgram;
-	shaderProgram = glCreateProgram();
-
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-
-	//shader error handling
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-		std::cout << "Failed to link shaders: " << std::endl << infoLog << std::endl;
-	}
-
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
-
-
-	//vertex array
 	float vertices[] = {
-		0.0f, 0.5f, 0.0f,
-		0.5f, -0.5f, 0.0f,
-		-0.5f, -0.5f, 0.0f
+		//positions				colors
+		-0.25f, -0.5f, 0.0f,		1.0f, 0.0f, 0.0f,
+		 0.15f,  0.0f, 0.0f,		0.0f, 1.0f, 0.0f,
+		 0.0f,   0.5f, 0.0f,		0.0f, 0.0f, 1.0f,
+		 0.5f,  -0.4f, 0.0f,		1.0f, 0.2f, 1.0f
+
+	};
+
+	unsigned int indices[] = {
+		0, 1, 2,
+		3, 1, 2
 	};
 
 	// VAO, VBO
-	unsigned int VAO, VBO;
+	unsigned int VAO, VBO, EBO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
 
 	// bind VAO 
 	glBindVertexArray(VAO);
@@ -121,26 +77,69 @@ int main() {
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //GL_DYNAMIC_DRAW = change every frame
 
-	//set attribute pointer
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	//set attributes pointers
+
+
+	//positions
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
+
+	//colors
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(GLuint)));
+	glEnableVertexAttribArray(1);
+
+
+	// bind EBO
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+
+	//matrix init
+	glm::mat4 trans		= glm::mat4(1.0f);
+	glm::mat4 trans2	= glm::mat4(1.0f);
+	//transform 45 degrees z axis
+	trans = glm::rotate(trans, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	
+	trans2 = glm::scale(trans, glm::vec3(1.2f));
+	//trans2 = glm::rotate(trans, glm::radians(15.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	//give to shader
+	shader.activate();
+	shader.setMat4("transform", trans);
+	shader2.activate();
+	shader2.setMat4("transform", trans2);
 
 	while (!glfwWindowShouldClose(window)) {
 		glfwSwapBuffers(window);
 		glfwPollEvents();
-		//render
-		glClearColor(0.8f, 0.6f, 0.1f, 0.0f);
+		//background color
+		glClearColor(0.55f, 0.0f, 1.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / 100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		trans2 = glm::rotate(trans2, glm::radians((float)glfwGetTime() / 100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		
+		
 		//draw shape
 		glBindVertexArray(VAO);
-		glUseProgram(shaderProgram);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		//first triangl
+		shader.activate();
+		shader.setMat4("transform", trans);
+		//glDrawArrays(GL_LINE_STRIP, 0, 6);
+		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+
+
+		//second triangle
+		//glUseProgram(shaderPrograms[1]);
+		shader2.activate();
+		shader2.setMat4("transform", trans2);
+		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(3 * sizeof(unsigned int)));
 
 
 		processInput(window);
 	}
-
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
+	glDeleteBuffers(1, &EBO);
 	glfwTerminate();
 
 	return 0;
@@ -155,24 +154,4 @@ void processInput(GLFWwindow* window) {
 void framebuff_size_callback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
 
-}
-
-std::string loadShaderSrc(const char* filename) {
-	std::ifstream file;
-	std::stringstream buf;
-
-	std::string ret = "";
-
-	file.open(filename);
-
-	if (file.is_open()) {
-		buf << file.rdbuf();
-		ret = buf.str();
-	}
-	else {
-		std::cout << "Could not open " << filename << std::endl;
-	}
-	file.close();
-
-	return ret;
 }
