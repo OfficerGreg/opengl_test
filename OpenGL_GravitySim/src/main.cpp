@@ -1,6 +1,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "stb_image.h"
+
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "include/Shader.h"
@@ -51,11 +53,11 @@ int main() {
 	
 
 	float vertices[] = {
-		//positions				colors
-		-0.25f, -0.5f, 0.0f,		1.0f, 0.0f, 0.0f,
-		 0.15f,  0.0f, 0.0f,		0.0f, 1.0f, 0.0f,
-		 0.0f,   0.5f, 0.0f,		0.0f, 0.0f, 1.0f,
-		 0.5f,  -0.4f, 0.0f,		1.0f, 0.2f, 1.0f
+		//positions					colors				texture coordinates
+		 -0.5f, -0.5f, 0.0f,		1.0f, 0.0f, 0.0f,	0.0f, 0.0f,
+		 -0.5f,  0.5f, 0.0f,		0.0f, 1.0f, 0.0f,	0.0f, 1.0f,
+		 0.5f,  -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,	1.0f, 0.0f,
+		 0.5f,   0.5f, 0.0f,		1.0f, 0.2f, 1.0f,	1.0f, 1.0f	
 
 	};
 
@@ -81,32 +83,84 @@ int main() {
 
 
 	//positions
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
 	//colors
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(GLuint)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(GL_FLOAT)));
 	glEnableVertexAttribArray(1);
+	
+	//textures
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(GL_FLOAT)));
+	glEnableVertexAttribArray(2);
+
+	unsigned int texture1, texture2;
+	
+	//bind textures
+	glGenTextures(1, &texture1);
+
+	glBindTexture(GL_TEXTURE_2D, texture1);
+	//image wrap
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	//S = X, T = Y, R = Z
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	//load image		channels = rbg, argb, r
+	int width, height, nChannels;
+	stbi_set_flip_vertically_on_load(true);
+	unsigned char* data = stbi_load("assets/image1.png", &width, &height, &nChannels, 0);
+
+	if (data) {
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else {
+		std::cout << "Failed to load texture" << std::endl;
+	}
+	stbi_image_free(data);
+	
+	
+	glGenTextures(1, &texture2);
+
+	glBindTexture(GL_TEXTURE_2D, texture2);
+
+	data = stbi_load("assets/image2.jpg", &width, &height, &nChannels, 0);
+
+	if (data) {
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else {
+		std::cout << "Failed to load texture" << std::endl;
+	}
+	stbi_image_free(data);
+
+	shader.activate();
+	shader.setInt("texture1", 0);
+	shader.setInt("texture2", 1);
+
 
 
 	// bind EBO
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-
 	//matrix init
-	glm::mat4 trans		= glm::mat4(1.0f);
-	glm::mat4 trans2	= glm::mat4(1.0f);
+	//glm::mat4 trans		= glm::mat4(1.0f);
+	//glm::mat4 trans2	= glm::mat4(1.0f);
 	//transform 45 degrees z axis
-	trans = glm::rotate(trans, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	
-	trans2 = glm::scale(trans, glm::vec3(1.2f));
-	//trans2 = glm::rotate(trans, glm::radians(15.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	//give to shader
-	shader.activate();
-	shader.setMat4("transform", trans);
-	shader2.activate();
-	shader2.setMat4("transform", trans2);
+	//trans = glm::rotate(trans, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	//
+	//trans2 = glm::scale(trans, glm::vec3(1.2f));
+	////trans2 = glm::rotate(trans, glm::radians(15.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	////give to shader
+	//shader.activate();
+	//shader.setMat4("transform", trans);
+	//shader2.activate();
+	//shader2.setMat4("transform", trans2);
 
 	while (!glfwWindowShouldClose(window)) {
 		glfwSwapBuffers(window);
@@ -115,24 +169,30 @@ int main() {
 		glClearColor(0.55f, 0.0f, 1.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / 100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		trans2 = glm::rotate(trans2, glm::radians((float)glfwGetTime() / 100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture1);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, texture2);
+
+		//trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / 100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		//trans2 = glm::rotate(trans2, glm::radians((float)glfwGetTime() / 100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		
 		
 		//draw shape
 		glBindVertexArray(VAO);
 		//first triangl
 		shader.activate();
-		shader.setMat4("transform", trans);
+		//shader.setMat4("transform", trans);
 		//glDrawArrays(GL_LINE_STRIP, 0, 6);
-		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 
 		//second triangle
 		//glUseProgram(shaderPrograms[1]);
-		shader2.activate();
-		shader2.setMat4("transform", trans2);
-		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(3 * sizeof(unsigned int)));
+		//shader2.activate();
+		//shader2.setMat4("transform", trans2);
+		//glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(3 * sizeof(unsigned int)));
 
 
 		processInput(window);
