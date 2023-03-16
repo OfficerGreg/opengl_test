@@ -149,8 +149,7 @@ int main() {
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	//matrix init
-	//glm::mat4 trans		= glm::mat4(1.0f);
-	//glm::mat4 trans2	= glm::mat4(1.0f);
+	glm::mat4 trans		= glm::mat4(1.0f);
 	//transform 45 degrees z axis
 	//trans = glm::rotate(trans, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	//
@@ -175,7 +174,7 @@ int main() {
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, texture2);
 
-		//trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / 100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / 10.0f), glm::vec3(12.0f, 12.0f, 1.0f));
 		//trans2 = glm::rotate(trans2, glm::radians((float)glfwGetTime() / 100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		
 		
@@ -183,9 +182,9 @@ int main() {
 		glBindVertexArray(VAO);
 		//first triangl
 		shader.activate();
-		//shader.setMat4("transform", trans);
+		shader.setMat4("transform", trans);
 		//glDrawArrays(GL_LINE_STRIP, 0, 6);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); 
 
 
 		//second triangle
