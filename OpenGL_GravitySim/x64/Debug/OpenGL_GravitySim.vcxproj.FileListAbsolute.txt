@@ -1,0 +1,2 @@
+C:\Users\Jakub\Desktop\opengl_test\OpenGL_GravitySim\x64\Debug\OpenGL_GravitySim.vcxproj.CopyComplete
+G:\CPP\OpenGL_GravitySim\OpenGL_GravitySim\x64\Debug\OpenGL_GravitySim.vcxproj.CopyComplete

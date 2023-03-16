@@ -3,6 +3,9 @@
 
 #include "stb_image.h"
 
+//logging
+#include <spdlog/spdlog.h>
+
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "include/Shader.h"
@@ -25,33 +28,54 @@ int main() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-
-	//set window icon
 	
-
-
+	std::cout << glfwGetVersionString() << std::endl;
 
 	//create window
 	GLFWwindow* window = glfwCreateWindow(screen_width, screen_height, u8"中国天然橡胶1个", NULL, NULL);
 	if (window == NULL) {
-		std::cout << "Failed to create GLFW window" << std::endl;
+		spdlog::error("Failed to create GLFW window");
 		glfwTerminate();
 		return -1;
 	}
-	std::cout << glfwGetVersionString() << std::endl;
+	else {
+		spdlog::info("Successfully created glfw window!");
+	}
 	glfwMakeContextCurrent(window);
-
 
 	//init glad (rendering window)
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
-		std::cout << "Failed to initialize GLAD" << std::endl;
+		spdlog::error("Failed to initialize GLAD");
 		return -1;
+	}
+	else {
+		spdlog::info("Successfully initialized GLAD!");
 	}
 
 	glViewport(0, 0, screen_width, screen_height);
 	//resizing
 	glfwSetFramebufferSizeCallback(window, framebuff_size_callback);
+
+
+	//set window icon
+	int icon_width, icon_height, icon_channels;
+
+	unsigned char* icon_data = stbi_load("assets/image1.png", &icon_width, &icon_height, &icon_channels, 4);
+	if (icon_data) {
+		spdlog::info("icon loaded successfully!");
+	}
+	else {
+		spdlog::error("icon could not be loaded");
+	}
+
+
+	GLFWimage icons[1];
+	icons[0].width	= icon_width;
+	icons[0].height = icon_height;
+	icons[0].pixels = icon_data;
+
+	glfwSetWindowIcon(window, 1, icons);
+	stbi_image_free(icon_data);
 
 	/*
 		shaders
@@ -126,7 +150,7 @@ int main() {
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 	else {
-		std::cout << "Failed to load texture" << std::endl;
+		spdlog::error("Failed to load texture");
 	}
 	stbi_image_free(data);
 	
@@ -142,7 +166,7 @@ int main() {
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 	else {
-		std::cout << "Failed to load texture" << std::endl;
+		spdlog::error("Failed to load texture");
 	}
 	stbi_image_free(data);
 

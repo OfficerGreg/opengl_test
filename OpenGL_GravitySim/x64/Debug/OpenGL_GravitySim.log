@@ -1,5 +1,4 @@
-﻿  Shader.cpp
-  main.cpp
-  stb.cpp
-  Generating Code...
+﻿  main.cpp
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared\minwindef.h(130,1): warning C4005: 'APIENTRY': macro redefinition
+G:\CPPLIB\vcpkg\installed\x64-windows\include\glad\glad.h(32): message : see previous definition of 'APIENTRY'
   OpenGL_GravitySim.vcxproj -> G:\CPP\OpenGL_GravitySim\x64\Debug\OpenGL_GravitySim.exe
