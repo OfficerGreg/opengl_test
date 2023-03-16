@@ -1,4 +1,4 @@
-#include <glad/glad.h>
+﻿#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include "stb_image.h"
@@ -13,10 +13,12 @@ void framebuff_size_callback(GLFWwindow* window, int width, int height);
 //I/O handling
 void processInput(GLFWwindow* window);
 
+float mixTex = 0.5f;
 
 int main() {
-	int success;
-	char infoLog[512];
+	uint16_t screen_width	= 1200;
+	uint16_t screen_height	= 720;
+
 
 	glfwInit();
 	glfwWindowHint(GLFW_SAMPLES, 4);
@@ -25,13 +27,19 @@ int main() {
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 
+	//set window icon
+	
+
+
+
 	//create window
-	GLFWwindow* window = glfwCreateWindow(800, 600, "Test", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(screen_width, screen_height, u8"中国天然橡胶1个", NULL, NULL);
 	if (window == NULL) {
 		std::cout << "Failed to create GLFW window" << std::endl;
 		glfwTerminate();
 		return -1;
 	}
+	std::cout << glfwGetVersionString() << std::endl;
 	glfwMakeContextCurrent(window);
 
 
@@ -41,7 +49,7 @@ int main() {
 		return -1;
 	}
 
-	glViewport(0, 0, 800, 600);
+	glViewport(0, 0, screen_width, screen_height);
 	//resizing
 	glfwSetFramebufferSizeCallback(window, framebuff_size_callback);
 
@@ -174,16 +182,20 @@ int main() {
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, texture2);
 
-		trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / 10.0f), glm::vec3(12.0f, 12.0f, 1.0f));
+		trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / 10.0f), glm::vec3(12.0f, 12.0f, 12.0f));
 		//trans2 = glm::rotate(trans2, glm::radians((float)glfwGetTime() / 100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		
 		
 		//draw shape
-		glBindVertexArray(VAO);
+		glBindVertexArray(VAO); 
 		//first triangl
 		shader.activate();
 		shader.setMat4("transform", trans);
 		//glDrawArrays(GL_LINE_STRIP, 0, 6);
+
+
+		shader.setFloat("mixTex", mixTex);
+
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); 
 
 
@@ -207,6 +219,20 @@ int main() {
 void processInput(GLFWwindow* window) {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+		mixTex += 0.1f;
+		if (mixTex > 1.0f) {
+			mixTex = 1.0f;
+		}
+	}
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+		mixTex -= 0.1f;
+		if (mixTex < 0.0f) {
+			mixTex = 0.0f;
+		}
+	
+	}
+
 }
 
 

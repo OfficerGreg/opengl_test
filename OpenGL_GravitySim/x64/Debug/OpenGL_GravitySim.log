@@ -1,4 +1,5 @@
-﻿  main.cpp
-G:\CPP\OpenGL_GravitySim\OpenGL_GravitySim\src\main.cpp(19,7): warning C4101: 'infoLog': unreferenced local variable
-G:\CPP\OpenGL_GravitySim\OpenGL_GravitySim\src\main.cpp(18,6): warning C4101: 'success': unreferenced local variable
+﻿  Shader.cpp
+  main.cpp
+  stb.cpp
+  Generating Code...
   OpenGL_GravitySim.vcxproj -> G:\CPP\OpenGL_GravitySim\x64\Debug\OpenGL_GravitySim.exe

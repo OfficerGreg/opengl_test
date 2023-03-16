@@ -26,10 +26,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
     <None Include="src\shaders\fragment_core.glsl" />
     <None Include="src\shaders\vertex_core.glsl" />
     <None Include="src\shaders\fragment_core2.glsl" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\include\stb_image.h">
