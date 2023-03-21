@@ -1,20 +1,100 @@
 #include "Mouse.h"
 
+double Mouse::x = 0;
+double Mouse::y = 0;
 
-void Mouse::cursosPosCallback(GLFWwindow* window, double _x, double _y){}
-void Mouse::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods){}
-void Mouse::mouseWheelCallback(GLFWwindow* window, double dx, double dy){}
+double Mouse::lastX = 0;
+double Mouse::lastY = 0;
 
-double Mouse::getMouseX(){}
-double Mouse::getMouseY(){}
+double Mouse::dx = 0;
+double Mouse::dy = 0;
 
-double Mouse::getDX(){}
-double Mouse::getDY(){}
- 
-double Mouse::getScrollDX(){}
-double Mouse::getScrollDY(){}
+double Mouse::scrollDX = 0;
+double Mouse::scrollDY = 0;
 
-bool Mouse::buttonChanged(int button){}
-bool Mouse::buttonPressed(int button){}
-bool Mouse::buttonReleased(int button){}
-bool Mouse::button(int button){}
+bool Mouse::firstMouse = true;
+
+bool Mouse::buttons[GLFW_MOUSE_BUTTON_LAST] = { 0 };
+bool Mouse::buttonsChanged[GLFW_MOUSE_BUTTON_LAST] = { 0 };
+
+
+void Mouse::cursosPosCallback(GLFWwindow* window, double _x, double _y){
+	x = _x;
+	y = _y;
+
+	if (firstMouse) {
+		lastX = x;
+		lastY = y;
+		firstMouse = false;
+	}
+
+	dx = x - lastX;
+	dy = lastY - y; //inverted
+	lastX = y;
+	lastY = y;
+}
+
+
+void Mouse::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods){
+	if (action != GLFW_RELEASE) {
+		if (!buttons[button]) {
+			buttons[button] = true;
+		}
+	}
+	else {
+		buttons[button] = false;
+	}
+	buttonsChanged[button] = action != GLFW_REPEAT;
+}
+
+void Mouse::mouseWheelCallback(GLFWwindow* window, double dx, double dy){
+	scrollDX = dx;
+	scrollDY = dy;
+}
+
+double Mouse::getMouseX(){
+	return x;
+}
+
+double Mouse::getMouseY(){
+	return y;
+}
+
+double Mouse::getDX(){
+	double _dx = dx;
+	dx = 0;
+	return _dx;
+}
+
+double Mouse::getDY(){
+	double _dy = dy;
+	dy = 0;
+	return _dy;
+}
+
+
+double Mouse::getScrollDX(){
+	double dx = scrollDX;
+	scrollDX = 0;
+	return dx;
+}
+double Mouse::getScrollDY(){
+	double dy = scrollDY;
+	scrollDY = 0;
+	return dy;
+}
+
+bool Mouse::buttonChanged(int button){
+	bool ret = buttonsChanged[button];
+	buttonsChanged[button] = false;
+	return ret;
+}
+bool Mouse::buttonPressed(int button){
+	return buttons[button] && buttonChanged(button);
+}
+bool Mouse::buttonReleased(int button){
+	return !buttons[button] && buttonChanged(button);
+}
+bool Mouse::button(int button){
+	return buttons[button];
+}

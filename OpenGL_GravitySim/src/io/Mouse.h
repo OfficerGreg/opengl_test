@@ -25,6 +25,22 @@ public:
 	static bool buttonReleased(int button);
 
 private:
+	static double x;
+	static double y;
+
+	static double lastX;
+	static double lastY;
+
+	static double dx;
+	static double dy;
+
+	static double scrollDX;
+	static double scrollDY;
+
+	static bool firstMouse;
+
+	static bool buttons[];
+	static bool buttonsChanged[];
 };
 
 #endif 

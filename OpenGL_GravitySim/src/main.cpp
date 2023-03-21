@@ -1,11 +1,19 @@
-﻿#include <glad/glad.h>
+﻿//opoengl
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+//img loading
 #include "stb_image.h"
+
+//imgui
+#include <imgui.h>
+#include <imgui_stdlib.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 
 //logging
 #include <spdlog/spdlog.h>
-
+//math
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "include/Shader.h"
@@ -86,7 +94,7 @@ int main() {
 
 	float vertices[] = {
 		//positions					colors				texture coordinates
-		 -0.5f, -0.5f, 0.0f,		1.0f, 0.0f, 0.0f,	0.0f, 0.0f,
+		 -0.5f, -0.5f, 1.0f,		1.0f, 0.0f, 0.0f,	0.0f, 0.0f,
 		 -0.5f,  0.5f, 0.0f,		0.0f, 1.0f, 0.0f,	0.0f, 1.0f,
 		 0.5f,  -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,	1.0f, 0.0f,
 		 0.5f,   0.5f, 0.0f,		1.0f, 0.2f, 1.0f,	1.0f, 1.0f	
@@ -97,6 +105,16 @@ int main() {
 		0, 1, 2,
 		3, 1, 2
 	};
+
+	//IMGUI INIT
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	// Setup Platform/Renderer bindings
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init("#version 330 core");
+	// Setup Dear ImGui style
+	ImGui::StyleColorsDark();
 
 	// VAO, VBO
 	unsigned int VAO, VBO, EBO;
@@ -193,6 +211,8 @@ int main() {
 	//shader2.activate();
 	//shader2.setMat4("transform", trans2);
 
+	ImVec2 win1 = {300.0f, 150.0f};
+
 	while (!glfwWindowShouldClose(window)) {
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -200,11 +220,18 @@ int main() {
 		glClearColor(0.55f, 0.0f, 1.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		//input to imgui
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture1);
 
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, texture2);
+
+
 
 		trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / 10.0f), glm::vec3(12.0f, 12.0f, 12.0f));
 		//trans2 = glm::rotate(trans2, glm::radians((float)glfwGetTime() / 100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -223,6 +250,18 @@ int main() {
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); 
 
 
+		// render your GUI
+		ImGui::Begin("Properties");
+		ImGui::SetWindowSize(win1, 0);
+		mixTex = 0.0f;
+		ImGui::SliderFloat("texture mix", &mixTex, -2, 2 );
+		static float translation[] = { 0.0, 0.0 };
+		ImGui::SliderFloat2("position", translation, -1, 1);
+		ImGui::End();
+		trans = glm::translate(trans, glm::vec3(translation[0], translation[1], 0.0f));
+
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 		//second triangle
 		//glUseProgram(shaderPrograms[1]);
 		//shader2.activate();
