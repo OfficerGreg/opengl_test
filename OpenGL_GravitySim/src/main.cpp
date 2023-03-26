@@ -24,7 +24,8 @@ void framebuff_size_callback(GLFWwindow* window, int width, int height);
 //I/O handling
 void processInput(GLFWwindow* window);
 
-float mixTex = 0.5f;
+static float mixTex = 0.0f;
+float positionZ = -3.0f;
 
 int main() {
 	uint16_t screen_width	= 1200;
@@ -92,18 +93,62 @@ int main() {
 	Shader shader2("src/shaders/vertex_core.glsl", "src/shaders/fragment_core2.glsl");
 	
 
-	float vertices[] = {
-		//positions					colors				texture coordinates
-		 -0.5f, -0.5f, 1.0f,		1.0f, 0.0f, 0.0f,	0.0f, 0.0f,
-		 -0.5f,  0.5f, 0.0f,		0.0f, 1.0f, 0.0f,	0.0f, 1.0f,
-		 0.5f,  -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,	1.0f, 0.0f,
-		 0.5f,   0.5f, 0.0f,		1.0f, 0.2f, 1.0f,	1.0f, 1.0f	
+	//float vertices[] = {
+	//	//positions					colors				texture coordinates
+	//	 -0.5f, -0.5f, 0.0f,		1.0f, 0.0f, 0.0f,	0.0f, 0.0f,
+	//	 -0.5f,  0.5f, 0.0f,		0.0f, 1.0f, 0.0f,	0.0f, 1.0f,
+	//	 0.5f,  -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,	1.0f, 0.0f,
+	//	 0.5f,   0.5f, 0.0f,		1.0f, 0.2f, 1.0f,	1.0f, 1.0f	
 
+	//};
+	float vertices[] = {
+	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+	 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+	-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 	};
 
+
 	unsigned int indices[] = {
-		0, 1, 2,
-		3, 1, 2
+		0, 1, 3, // first triangle
+		1, 2, 3  // second triangle
 	};
 
 	//IMGUI INIT
@@ -133,15 +178,15 @@ int main() {
 
 
 	//positions
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
 	//colors
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(GL_FLOAT)));
-	glEnableVertexAttribArray(1);
+	/*glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(GL_FLOAT)));
+	glEnableVertexAttribArray(1);*/
 	
 	//textures
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(GL_FLOAT)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(GL_FLOAT)));
 	glEnableVertexAttribArray(2);
 
 	unsigned int texture1, texture2;
@@ -199,7 +244,7 @@ int main() {
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	//matrix init
-	glm::mat4 trans		= glm::mat4(1.0f);
+	//glm::mat4 trans		= glm::mat4(1.0f);
 	//transform 45 degrees z axis
 	//trans = glm::rotate(trans, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	//
@@ -213,12 +258,33 @@ int main() {
 
 	ImVec2 win1 = {300.0f, 150.0f};
 
+	//camera										fov				aspect ratio						near	far frustum ratio
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)screen_width / (float)screen_height, 0.1f, 100.0f);
+
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+	glm::mat4 view = glm::mat4(1.0f);
+	view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
+
+	int modelLoc = glGetUniformLocation(shader.id, "model");
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+
+	int projectionLoc = glGetUniformLocation(shader.id, "projection");
+	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+	int viewLoc = glGetUniformLocation(shader.id, "view");
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+
+	
 	while (!glfwWindowShouldClose(window)) {
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 		//background color
 		glClearColor(0.55f, 0.0f, 1.0f, 0.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 
 		//input to imgui
 		ImGui_ImplOpenGL3_NewFrame();
@@ -231,34 +297,38 @@ int main() {
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, texture2);
 
+		//enables depth testing = no xray cube
+		glEnable(GL_DEPTH_TEST);
 
 
-		trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / 10.0f), glm::vec3(12.0f, 12.0f, 12.0f));
+		//trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / 10.0f), glm::vec3(12.0f, 12.0f, 12.0f));
 		//trans2 = glm::rotate(trans2, glm::radians((float)glfwGetTime() / 100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		
+		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f) / 1000, glm::vec3(0.5f, 1.0f, 0.0f));
 		
 		//draw shape
 		glBindVertexArray(VAO); 
-		//first triangl
+		//first triangle
 		shader.activate();
-		shader.setMat4("transform", trans);
+		shader.setMat4("model", model);
 		//glDrawArrays(GL_LINE_STRIP, 0, 6);
 
 
 		shader.setFloat("mixTex", mixTex);
 
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); 
-
+		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); 
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		// render your GUI
 		ImGui::Begin("Properties");
 		ImGui::SetWindowSize(win1, 0);
-		mixTex = 0.0f;
 		ImGui::SliderFloat("texture mix", &mixTex, -2, 2 );
-		static float translation[] = { 0.0, 0.0 };
-		ImGui::SliderFloat2("position", translation, -1, 1);
+		ImGui::SliderFloat("position", &positionZ, -50, 50);
+		view = glm::translate(view, glm::vec3(0.0f, 0.0f, positionZ));
 		ImGui::End();
-		trans = glm::translate(trans, glm::vec3(translation[0], translation[1], 0.0f));
+
+
+
+		//trans = glm::translate(trans, glm::vec3(translation[0], translation[1], 0.0f));
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
