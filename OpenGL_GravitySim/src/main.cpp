@@ -18,6 +18,10 @@
 
 #include "include/Shader.h"
 
+//mesh
+#include "mesh/Sphere.h";
+
+
 //resize window
 void framebuff_size_callback(GLFWwindow* window, int width, int height);
 
@@ -92,15 +96,9 @@ int main() {
 	Shader shader("src/shaders/vertex_core.glsl", "src/shaders/fragment_core.glsl");
 	Shader shader2("src/shaders/vertex_core.glsl", "src/shaders/fragment_core2.glsl");
 	
-
-	//float vertices[] = {
-	//	//positions					colors				texture coordinates
-	//	 -0.5f, -0.5f, 0.0f,		1.0f, 0.0f, 0.0f,	0.0f, 0.0f,
-	//	 -0.5f,  0.5f, 0.0f,		0.0f, 1.0f, 0.0f,	0.0f, 1.0f,
-	//	 0.5f,  -0.5f, 0.0f,		0.0f, 0.0f, 1.0f,	1.0f, 0.0f,
-	//	 0.5f,   0.5f, 0.0f,		1.0f, 0.2f, 1.0f,	1.0f, 1.0f	
-
-	//};
+	
+	//Cube
+	
 	float vertices[] = {
 	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 	 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
@@ -149,6 +147,20 @@ int main() {
 	unsigned int indices[] = {
 		0, 1, 3, // first triangle
 		1, 2, 3  // second triangle
+	};
+
+	//multiple cubes
+	glm::vec3 cubePositions[] = {
+		glm::vec3(0.0f,  0.0f,  0.0f),
+		glm::vec3(2.0f,  5.0f, -15.0f),
+		glm::vec3(-1.5f, -2.2f, -2.5f),
+		glm::vec3(-3.8f, -2.0f, -12.3f),
+		glm::vec3(2.4f, -0.4f, -3.5f),
+		glm::vec3(-1.7f,  3.0f, -7.5f),
+		glm::vec3(1.3f, -2.0f, -2.5f),
+		glm::vec3(1.5f,  2.0f, -2.5f),
+		glm::vec3(1.5f,  0.2f, -1.5f),
+		glm::vec3(-1.3f,  1.0f, -1.5f)
 	};
 
 	//IMGUI INIT
@@ -276,6 +288,10 @@ int main() {
 
 	int viewLoc = glGetUniformLocation(shader.id, "view");
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+	
+	
+	//sphere
+	Sphere sphere(5);
 
 	
 	while (!glfwWindowShouldClose(window)) {
@@ -301,42 +317,45 @@ int main() {
 		glEnable(GL_DEPTH_TEST);
 
 
-		//trans = glm::rotate(trans, glm::radians((float)glfwGetTime() / 10.0f), glm::vec3(12.0f, 12.0f, 12.0f));
-		//trans2 = glm::rotate(trans2, glm::radians((float)glfwGetTime() / 100.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f) / 1000, glm::vec3(0.5f, 1.0f, 0.0f));
-		
+	
 		//draw shape
 		glBindVertexArray(VAO); 
 		//first triangle
 		shader.activate();
 		shader.setMat4("model", model);
 		//glDrawArrays(GL_LINE_STRIP, 0, 6);
-
-
 		shader.setFloat("mixTex", mixTex);
 
 		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); 
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		for (int i = 0; i < sizeof(cubePositions) / sizeof(glm::vec3); i++) {
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, cubePositions[i]);
+			float angle = 20.0f * i;
+
+			if (i % 3 == 0) {
+				angle = glfwGetTime() * 25.0f;
+			}
+			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+			shader.setMat4("model", model);
+
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
+		shader.activate();
+		sphere.draw(shader.id);
+
 
 		// render your GUI
 		ImGui::Begin("Properties");
 		ImGui::SetWindowSize(win1, 0);
-		ImGui::SliderFloat("texture mix", &mixTex, -2, 2 );
+		ImGui::SliderFloat("texture mix", &mixTex, 0, 1 );
 		ImGui::SliderFloat("position", &positionZ, -50, 50);
 		view = glm::translate(view, glm::vec3(0.0f, 0.0f, positionZ));
 		ImGui::End();
 
 
-
-		//trans = glm::translate(trans, glm::vec3(translation[0], translation[1], 0.0f));
-
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-		//second triangle
-		//glUseProgram(shaderPrograms[1]);
-		//shader2.activate();
-		//shader2.setMat4("transform", trans2);
-		//glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)(3 * sizeof(unsigned int)));
 
 
 		processInput(window);
@@ -371,5 +390,4 @@ void processInput(GLFWwindow* window) {
 
 void framebuff_size_callback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
-
 }
