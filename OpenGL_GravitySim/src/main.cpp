@@ -160,7 +160,7 @@ int main() {
 		glm::vec3(1.3f, -2.0f, -2.5f),
 		glm::vec3(1.5f,  2.0f, -2.5f),
 		glm::vec3(1.5f,  0.2f, -1.5f),
-		glm::vec3(-1.3f,  1.0f, -1.5f)
+		glm::vec3(-1.3f,  1.0f, -1.5f),
 	};
 
 	//IMGUI INIT
@@ -255,43 +255,36 @@ int main() {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-	//matrix init
-	//glm::mat4 trans		= glm::mat4(1.0f);
-	//transform 45 degrees z axis
-	//trans = glm::rotate(trans, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	//
-	//trans2 = glm::scale(trans, glm::vec3(1.2f));
-	////trans2 = glm::rotate(trans, glm::radians(15.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	////give to shader
-	//shader.activate();
-	//shader.setMat4("transform", trans);
-	//shader2.activate();
-	//shader2.setMat4("transform", trans2);
-
 	ImVec2 win1 = {300.0f, 150.0f};
 
+	/*
+		Camera	
+	*/
 	//camera										fov				aspect ratio						near	far frustum ratio
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)screen_width / (float)screen_height, 0.1f, 100.0f);
-
+	shader.setMat4("projection", projection);
 	glm::mat4 model = glm::mat4(1.0f);
 	model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
-	glm::mat4 view = glm::mat4(1.0f);
-	view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
+	
+	//camera position
+	glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
 
-	int modelLoc = glGetUniformLocation(shader.id, "model");
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+	//camera direction y
+	glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
+	glm::vec3 cameraDirection = glm::normalize(cameraPos - cameraTarget);
 
+	//right axis x
+	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+	glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraDirection));
 
-	int projectionLoc = glGetUniformLocation(shader.id, "projection");
-	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+	//up axis y
+	glm::vec3 cameraUp = glm::cross(cameraDirection, cameraRight);
 
-	int viewLoc = glGetUniformLocation(shader.id, "view");
-	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 	
 	
 	//sphere
-	Sphere sphere(5);
+	Sphere sphere(15);
 
 	
 	while (!glfwWindowShouldClose(window)) {
@@ -319,30 +312,43 @@ int main() {
 
 	
 		//draw shape
-		glBindVertexArray(VAO); 
-		//first triangle
 		shader.activate();
-		shader.setMat4("model", model);
-		//glDrawArrays(GL_LINE_STRIP, 0, 6);
 		shader.setFloat("mixTex", mixTex);
 
-		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); 
+		//camera
+		glm::mat4 view = glm::mat4(1.0f);
+		const float radius = 30.0f;
+		float camX = static_cast<float>(sin(glfwGetTime()) * radius);
+		float camZ = static_cast<float>(cos(glfwGetTime()) * radius);
+		view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+		shader.setMat4("view", view);
 
+		glBindVertexArray(VAO); 
 		for (int i = 0; i < sizeof(cubePositions) / sizeof(glm::vec3); i++) {
 			glm::mat4 model = glm::mat4(1.0f);
 			model = glm::translate(model, cubePositions[i]);
 			float angle = 20.0f * i;
-
-			if (i % 3 == 0) {
-				angle = glfwGetTime() * 25.0f;
+			if (i % 2 == 0) {
+				angle = 1000.0f * glfwGetTime();
 			}
 			model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
 			shader.setMat4("model", model);
 
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
-		shader.activate();
+		//shader.activate();
+		//draw this sphere at pos 0
+		glm::mat4 sphere_model = glm::mat4(1.0f);
+		const float radiusS = 15.0f;
+		float camXS = static_cast<float>(sin(glfwGetTime()) * radiusS);
+		float camZS = static_cast<float>(cos(glfwGetTime()) * radiusS);
+		sphere_model = glm::translate(sphere_model, glm::vec3(camXS, camXS, -camZS));
+		shader.setMat4("model", sphere_model);
 		sphere.draw(shader.id);
+
+
+
+
 
 
 		// render your GUI
@@ -350,7 +356,6 @@ int main() {
 		ImGui::SetWindowSize(win1, 0);
 		ImGui::SliderFloat("texture mix", &mixTex, 0, 1 );
 		ImGui::SliderFloat("position", &positionZ, -50, 50);
-		view = glm::translate(view, glm::vec3(0.0f, 0.0f, positionZ));
 		ImGui::End();
 
 
@@ -386,7 +391,6 @@ void processInput(GLFWwindow* window) {
 	}
 
 }
-
 
 void framebuff_size_callback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
