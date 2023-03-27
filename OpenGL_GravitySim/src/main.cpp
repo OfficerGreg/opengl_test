@@ -1,9 +1,11 @@
 ﻿//opoengl
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 //img loading
 #include "stb_image.h"
+
 
 //imgui
 #include <imgui.h>
@@ -21,7 +23,7 @@
 //mesh
 #include "mesh/Sphere.h";
 
-
+#include "Window.h"
 //resize window
 void framebuff_size_callback(GLFWwindow* window, int width, int height);
 
@@ -36,59 +38,10 @@ int main() {
 	uint16_t screen_height	= 720;
 
 
-	glfwInit();
-	glfwWindowHint(GLFW_SAMPLES, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	
-	std::cout << glfwGetVersionString() << std::endl;
+	Window window(screen_width, screen_height, u8"中国天然橡胶1个");
+	GLFWwindow* glfwWindow = window.getGLFWwindow();
+	framebuff_size_callback(window.getGLFWwindow(), screen_width, screen_height);
 
-	//create window
-	GLFWwindow* window = glfwCreateWindow(screen_width, screen_height, u8"中国天然橡胶1个", NULL, NULL);
-	if (window == NULL) {
-		spdlog::error("Failed to create GLFW window");
-		glfwTerminate();
-		return -1;
-	}
-	else {
-		spdlog::info("Successfully created glfw window!");
-	}
-	glfwMakeContextCurrent(window);
-
-	//init glad (rendering window)
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
-		spdlog::error("Failed to initialize GLAD");
-		return -1;
-	}
-	else {
-		spdlog::info("Successfully initialized GLAD!");
-	}
-
-	glViewport(0, 0, screen_width, screen_height);
-	//resizing
-	glfwSetFramebufferSizeCallback(window, framebuff_size_callback);
-
-
-	//set window icon
-	int icon_width, icon_height, icon_channels;
-
-	unsigned char* icon_data = stbi_load("assets/image1.png", &icon_width, &icon_height, &icon_channels, 4);
-	if (icon_data) {
-		spdlog::info("icon loaded successfully!");
-	}
-	else {
-		spdlog::error("icon could not be loaded");
-	}
-
-
-	GLFWimage icons[1];
-	icons[0].width	= icon_width;
-	icons[0].height = icon_height;
-	icons[0].pixels = icon_data;
-
-	glfwSetWindowIcon(window, 1, icons);
-	stbi_image_free(icon_data);
 
 	/*
 		shaders
@@ -168,7 +121,7 @@ int main() {
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
 	// Setup Platform/Renderer bindings
-	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplGlfw_InitForOpenGL(window.getGLFWwindow(), true);
 	ImGui_ImplOpenGL3_Init("#version 330 core");
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
@@ -287,8 +240,8 @@ int main() {
 	Sphere sphere(15);
 
 	
-	while (!glfwWindowShouldClose(window)) {
-		glfwSwapBuffers(window);
+	while (!glfwWindowShouldClose(window.getGLFWwindow())) {
+		glfwSwapBuffers(window.getGLFWwindow());
 		glfwPollEvents();
 		//background color
 		glClearColor(0.55f, 0.0f, 1.0f, 0.0f);
@@ -363,7 +316,7 @@ int main() {
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 
-		processInput(window);
+		processInput(window.getGLFWwindow());
 	}
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
