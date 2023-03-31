@@ -43,8 +43,11 @@
   <ItemGroup>
     <None Include="src\shaders\fragment_core.glsl" />
     <None Include="src\shaders\vertex_core.glsl" />
-    <None Include="src\shaders\fragment_core2.glsl" />
     <None Include="packages.config" />
+    <None Include="src\shaders\lighting_vert.glsl" />
+    <None Include="src\shaders\lighting_frag.glsl" />
+    <None Include="src\shaders\cube_frag.glsl" />
+    <None Include="src\shaders\cube_vert.glsl" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\include\stb_image.h">
