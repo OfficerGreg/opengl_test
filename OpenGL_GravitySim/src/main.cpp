@@ -1,11 +1,9 @@
 ﻿//opoengl
-
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 //img loading
 #include "stb_image.h"
-
 
 //imgui
 #include <imgui.h>
@@ -41,16 +39,15 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 //zoom
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
+
 static float mixTex = 0.0f;
 
-
-uint16_t screen_width = 1400;
-uint16_t screen_height = 900;
-
+uint16_t SCREEN_WIDTH = 1400;
+uint16_t SCREEN_HEIGHT = 900;
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
-float lastX = screen_width / 2.0f;
-float lastY = screen_height / 2.0f;
+float lastX = SCREEN_WIDTH / 2.0f;
+float lastY = SCREEN_HEIGHT / 2.0f;
 bool firstMouse = true;
 
 
@@ -63,8 +60,12 @@ glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 float deltaTime = 0.0f;	// Time between current frame and last frame
 float lastFrame = 0.0f; // Time of last frame
 
+//tab-out
 bool mouse_locked = true;  // flag to keep track of whether the mouse is locked or not
 bool tab_pressed_last_frame = false;  // flag to keep track of whether the tab key was pressed last frame or not
+static bool center_on_cursor = false;
+glm::vec3 center = glm::vec3(1.0f);
+
 
 // lighting
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
@@ -73,13 +74,23 @@ int main() {
 	double lastTime = glfwGetTime();
 	int nbFrames = 0;
 
-	Window window(screen_width, screen_height, u8"中国天然橡胶1个");
+	Window window(SCREEN_WIDTH, SCREEN_HEIGHT, u8"中国天然橡胶1个");
 	GLFWwindow* glfwWindow = window.getGLFWwindow();
-	framebuff_size_callback(window.getGLFWwindow(), screen_width, screen_height);
+	framebuff_size_callback(window.getGLFWwindow(), SCREEN_WIDTH, SCREEN_HEIGHT);
 	//mouse
 	glfwSetCursorPosCallback(GLFW_WINDOW, mouse_callback);
 	glfwSetScrollCallback(GLFW_WINDOW, scroll_callback);
 	glfwSetInputMode(GLFW_WINDOW, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetFramebufferSizeCallback(GLFW_WINDOW, framebuff_size_callback);
+
+	//IMGUI INIT
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	// Setup Platform/Renderer bindings
+	ImGui_ImplGlfw_InitForOpenGL(GLFW_WINDOW, true);
+
+
 
 	//Shader
 	Shader cubeShader("src/shaders/cube_vert.glsl", "src/shaders/cube_frag.glsl");
@@ -131,15 +142,6 @@ int main() {
 	};
 
 
-	//IMGUI INIT
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	// Setup Platform/Renderer bindings
-	ImGui_ImplGlfw_InitForOpenGL(GLFW_WINDOW, true);
-
-
-
 	ImGui_ImplOpenGL3_Init("#version 330 core");
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
@@ -188,7 +190,7 @@ int main() {
 
 	while (!glfwWindowShouldClose(GLFW_WINDOW)) {
 		if (glfwGetTime() - lastTime >= 1.0) {
-			std::string windowName = u8"中国天然橡胶1个 |  FPS: " + std::to_string(nbFrames);
+			std::string windowName = u8"中国天然橡胶1个 |  FPS: " + std::to_string(nbFrames) + "     |  Bing Chilling Engine " + u8"\U0001F368";
 			glfwSetWindowTitle(window.getGLFWwindow(), windowName.c_str());
 		}
 
@@ -209,7 +211,6 @@ int main() {
 		lastFrame = currentFrame;
 
 		glEnable(GL_DEPTH_TEST);
-		glViewport(0, 0, screen_width, screen_height);
 
 
 		//background color
@@ -229,7 +230,7 @@ int main() {
 		cubeShader.setVec3("lightPos", lightPos);
 
 		//camera
-		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)screen_width / (float)screen_height, 0.1f, 100.0f);
+		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
 		cubeShader.setMat4("projection", projection);
 		// camera/view transformation
 		glm::mat4 view = camera.GetViewMatrix();
@@ -242,8 +243,8 @@ int main() {
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		//lamp cube
 		float light_x = static_cast<float>(sin(glfwGetTime()) * 8);
-		float light_y = static_cast<float>(cos(glfwGetTime()) * 12);
-		float light_z = static_cast<float>(acosh(glfwGetTime()) * 0.5);
+		float light_y = static_cast<float>(sin(glfwGetTime()) * 12);
+		float light_z = static_cast<float>(cos(glfwGetTime()) * 5);
 
 		lightPos = glm::normalize(glm::vec3(light_x, light_y , light_z));
 
@@ -298,6 +299,7 @@ int main() {
 }
 
 void processInput(GLFWwindow* window) {
+
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
@@ -339,6 +341,12 @@ void processInput(GLFWwindow* window) {
 		if (!tab_pressed_last_frame) {
 			tab_pressed_last_frame = true;
 			mouse_locked = !mouse_locked;
+			if (mouse_locked) {
+				double xpos, ypos;
+				glfwGetCursorPos(window, &xpos, &ypos);
+				lastX = static_cast<float>(xpos);
+				lastY = static_cast<float>(ypos);
+			}
 			glfwSetInputMode(window, GLFW_CURSOR, mouse_locked ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 		}
 	}
@@ -371,6 +379,10 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn){
 		lastY = ypos;
 
 		camera.ProcessMouseMovement(xoffset, yoffset);
+	}else if (center_on_cursor) {
+		float xpos = static_cast<float>(xposIn);
+		float ypos = static_cast<float>(yposIn);
+		center = glm::vec3(xpos, ypos, 0.0f);
 	}
 }
 
