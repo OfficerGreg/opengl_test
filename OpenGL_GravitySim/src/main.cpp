@@ -24,24 +24,61 @@
 #include "mesh/Sphere.h";
 
 #include "Window.h"
+#include "Camera.h"
+
+
+#define GLFW_WINDOW window.getGLFWwindow()
+
 //resize window
 void framebuff_size_callback(GLFWwindow* window, int width, int height);
 
 //I/O handling
 void processInput(GLFWwindow* window);
 
-static float mixTex = 0.0f;
-float positionZ = -3.0f;
+//camera mouse 
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
+//zoom
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
+static float mixTex = 0.0f;
+
+
+uint16_t screen_width = 1200;
+uint16_t screen_height = 720;
+
+
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+float lastX = screen_width / 2.0f;
+float lastY = screen_height / 2.0f;
+bool firstMouse = true;
+
+
+//camera pos
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+
+float deltaTime = 0.0f;	// Time between current frame and last frame
+float lastFrame = 0.0f; // Time of last frame
+
+bool mouse_locked = false;  // flag to keep track of whether the mouse is locked or not
+bool tab_pressed_last_frame = false;  // flag to keep track of whether the tab key was pressed last frame or not
 int main() {
-	uint16_t screen_width	= 1200;
-	uint16_t screen_height	= 720;
 
 
 	Window window(screen_width, screen_height, u8"中国天然橡胶1个");
 	GLFWwindow* glfwWindow = window.getGLFWwindow();
 	framebuff_size_callback(window.getGLFWwindow(), screen_width, screen_height);
-
+	//mouse
+	glfwSetCursorPosCallback(GLFW_WINDOW, mouse_callback);
+	glfwSetScrollCallback(GLFW_WINDOW, scroll_callback);
+	glfwSetInputMode(GLFW_WINDOW, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	//glfwSetKeyCallback(GLFW_WINDOW, key_callback);
 
 	/*
 		shaders
@@ -121,7 +158,10 @@ int main() {
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
 	// Setup Platform/Renderer bindings
-	ImGui_ImplGlfw_InitForOpenGL(window.getGLFWwindow(), true);
+	ImGui_ImplGlfw_InitForOpenGL(GLFW_WINDOW, true);
+
+
+
 	ImGui_ImplOpenGL3_Init("#version 330 core");
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
@@ -214,14 +254,9 @@ int main() {
 		Camera	
 	*/
 	//camera										fov				aspect ratio						near	far frustum ratio
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)screen_width / (float)screen_height, 0.1f, 100.0f);
-	shader.setMat4("projection", projection);
-	glm::mat4 model = glm::mat4(1.0f);
-	model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-
 	
-	//camera position
-	glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+
+
 
 	//camera direction y
 	glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -232,16 +267,21 @@ int main() {
 	glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraDirection));
 
 	//up axis y
-	glm::vec3 cameraUp = glm::cross(cameraDirection, cameraRight);
+	//glm::vec3 cameraUp = glm::cross(cameraDirection, cameraRight);
 
-	
-	
 	//sphere
 	Sphere sphere(15);
 
-	
-	while (!glfwWindowShouldClose(window.getGLFWwindow())) {
-		glfwSwapBuffers(window.getGLFWwindow());
+	float fov = 45.0f;
+
+	while (!glfwWindowShouldClose(GLFW_WINDOW)) {
+		//frame logic
+		float currentFrame = static_cast<float>(glfwGetTime());
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+
+
+		glfwSwapBuffers(GLFW_WINDOW);
 		glfwPollEvents();
 		//background color
 		glClearColor(0.55f, 0.0f, 1.0f, 0.0f);
@@ -269,11 +309,17 @@ int main() {
 		shader.setFloat("mixTex", mixTex);
 
 		//camera
-		glm::mat4 view = glm::mat4(1.0f);
 		const float radius = 30.0f;
 		float camX = static_cast<float>(sin(glfwGetTime()) * radius);
 		float camZ = static_cast<float>(cos(glfwGetTime()) * radius);
-		view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+		//view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)screen_width / (float)screen_height, 0.1f, 100.0f);
+		shader.setMat4("projection", projection);
+
+		// camera/view transformation
+		glm::mat4 view = camera.GetViewMatrix();
+		shader.setMat4("view", view);
+
 		shader.setMat4("view", view);
 
 		glBindVertexArray(VAO); 
@@ -300,16 +346,25 @@ int main() {
 		sphere.draw(shader.id);
 
 
+		//tab out
+		if (glfwGetKey(glfwWindow, GLFW_KEY_TAB) == GLFW_PRESS && !tab_pressed_last_frame) {
+			mouse_locked = !mouse_locked;
+			glfwSetInputMode(glfwWindow, GLFW_CURSOR, mouse_locked ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+		}
 
-
+		tab_pressed_last_frame = glfwGetKey(glfwWindow, GLFW_KEY_TAB) == GLFW_PRESS;
 
 
 		// render your GUI
 		ImGui::Begin("Properties");
 		ImGui::SetWindowSize(win1, 0);
 		ImGui::SliderFloat("texture mix", &mixTex, 0, 1 );
-		ImGui::SliderFloat("position", &positionZ, -50, 50);
+		ImGui::SetWindowSize(win1, 0);
+		ImGui::SliderFloat("Fov", &fov, 0, 90);
 		ImGui::End();
+
+		camera.SetZoom(fov);
+
 
 
 		ImGui::Render();
@@ -342,9 +397,59 @@ void processInput(GLFWwindow* window) {
 		}
 	
 	}
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+		camera.ProcessKeyboard(FORWARD, deltaTime * 2.0f);
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+		camera.ProcessKeyboard(FORWARD, deltaTime);
+	}
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+		camera.ProcessKeyboard(BACKWARD, deltaTime);
+	}
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+		camera.ProcessKeyboard(LEFT, deltaTime);
+	}
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+		camera.ProcessKeyboard(RIGHT, deltaTime);
+	}
 
 }
 
 void framebuff_size_callback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
 }
+
+void mouse_callback(GLFWwindow* window, double xposIn, double yposIn){
+	if (mouse_locked) {
+		float xpos = static_cast<float>(xposIn);
+		float ypos = static_cast<float>(yposIn);
+
+		if (firstMouse)
+		{
+			lastX = xpos;
+			lastY = ypos;
+			firstMouse = false;
+		}
+
+		float xoffset = xpos - lastX;
+		float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+
+		lastX = xpos;
+		lastY = ypos;
+
+		camera.ProcessMouseMovement(xoffset, yoffset);
+	}
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
+	camera.ProcessMouseScroll(static_cast<float>(yoffset));
+}
+
+//void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+//	if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
+//		static bool locked = false;
+//		locked = !locked;
+//		glfwSetInputMode(window, GLFW_CURSOR, locked ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+//	}
+//}

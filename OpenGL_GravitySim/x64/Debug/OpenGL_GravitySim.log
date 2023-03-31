@@ -2,5 +2,5 @@
 C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared\minwindef.h(130,1): warning C4005: 'APIENTRY': macro redefinition
 G:\CPPLIB\vcpkg\installed\x64-windows\include\glad\glad.h(32,1): message : see previous definition of 'APIENTRY'
 C:\Users\Jakub\Desktop\opengl_test - Copy\OpenGL_GravitySim\src\main.cpp(24,10): warning C4067: unexpected tokens following preprocessor directive - expected a newline
-C:\Users\Jakub\Desktop\opengl_test - Copy\OpenGL_GravitySim\src\main.cpp(285,21): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\Jakub\Desktop\opengl_test - Copy\OpenGL_GravitySim\src\main.cpp(331,21): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
   OpenGL_GravitySim.vcxproj -> C:\Users\Jakub\Desktop\opengl_test - Copy\x64\Debug\OpenGL_GravitySim.exe

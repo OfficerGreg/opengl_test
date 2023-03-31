@@ -39,9 +39,6 @@
     <ClCompile Include="src\Window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Camera.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\shaders\fragment_core.glsl" />
@@ -71,7 +68,7 @@
     <ClInclude Include="src\Window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Camera.h">
+    <ClInclude Include="src\Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

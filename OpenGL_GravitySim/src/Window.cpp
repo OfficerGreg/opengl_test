@@ -20,6 +20,10 @@ Window::Window(uint16_t window_width, uint16_t window_height, std::string window
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+#ifdef __APPLE__
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
 	std::cout << glfwGetVersionString() << std::endl;
 
 	//create window
