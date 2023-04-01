@@ -5,18 +5,16 @@
 //img loading
 #include "stb_image.h"
 
-//imgui
-#include <imgui.h>
-#include <imgui_stdlib.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h>
+#include "Gui.h"
 
 //logging
 #include <spdlog/spdlog.h>
 //math
+
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "include/Shader.h"
+#include "Shader.h"
+
 
 //mesh
 #include "mesh/Sphere.h";
@@ -70,6 +68,8 @@ glm::vec3 center = glm::vec3(1.0f);
 // lighting
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
+std::string glsl_version = "#version 330 core";
+
 int main() {
 	double lastTime = glfwGetTime();
 	int nbFrames = 0;
@@ -82,13 +82,8 @@ int main() {
 	glfwSetScrollCallback(GLFW_WINDOW, scroll_callback);
 	glfwSetInputMode(GLFW_WINDOW, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetFramebufferSizeCallback(GLFW_WINDOW, framebuff_size_callback);
-
-	//IMGUI INIT
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	// Setup Platform/Renderer bindings
-	ImGui_ImplGlfw_InitForOpenGL(GLFW_WINDOW, true);
+	//init imGui
+	Gui gui(GLFW_WINDOW, glsl_version);
 
 
 
@@ -141,11 +136,6 @@ int main() {
 			-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 	};
 
-
-	ImGui_ImplOpenGL3_Init("#version 330 core");
-	// Setup Dear ImGui style
-	ImGui::StyleColorsDark();
-
 	// VAO, VBO
 	unsigned int VAO, VBO;
 	glGenVertexArrays(1, &VAO);
@@ -166,7 +156,6 @@ int main() {
 	glEnableVertexAttribArray(1);
 
 
-	ImVec2 win1 = {300.0f, 150.0f};
 
 	float fov = 45.0f;
 
@@ -187,6 +176,9 @@ int main() {
 
 	//disable vsync
 	glfwSwapInterval(0);
+
+	ImVec2 win1 = { 300.0f, 150.0f };
+
 
 	while (!glfwWindowShouldClose(GLFW_WINDOW)) {
 		if (glfwGetTime() - lastTime >= 1.0) {
@@ -218,16 +210,17 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
-		//input to imgui
-		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplGlfw_NewFrame();
-		ImGui::NewFrame();
+		gui.beginFrame();
 
 
 		cubeShader.activate();
 		cubeShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-		cubeShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+		float light_x = static_cast<float>(sin(glfwGetTime()) * 8);
+		float light_y = static_cast<float>(sin(glfwGetTime()) * 12);
+		float light_z = static_cast<float>(cos(glfwGetTime()) * 5);
+		cubeShader.setVec3("lightColor", light_x, light_y, light_z);
 		cubeShader.setVec3("lightPos", lightPos);
+		cubeShader.setVec3("viewPos", camera.Position);
 
 		//camera
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
@@ -236,17 +229,19 @@ int main() {
 		glm::mat4 view = camera.GetViewMatrix();
 		cubeShader.setMat4("view", view);
 
+		//float light_x = static_cast<float>(sin(glfwGetTime()) * 8);
+		//float light_y = static_cast<float>(sin(glfwGetTime()) * 12);
+		//float light_z = static_cast<float>(cos(glfwGetTime()) * 5);
+
+		lightPos = glm::normalize(glm::vec3(light_x, light_y, light_z));
+
 		glm::mat4 model = glm::mat4(1.0f);
+		//model = glm::translate(model, lightPos);
 		cubeShader.setMat4("model", model);
 
 		glBindVertexArray(VAO); 
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		//lamp cube
-		float light_x = static_cast<float>(sin(glfwGetTime()) * 8);
-		float light_y = static_cast<float>(sin(glfwGetTime()) * 12);
-		float light_z = static_cast<float>(cos(glfwGetTime()) * 5);
-
-		lightPos = glm::normalize(glm::vec3(light_x, light_y , light_z));
 
 		lightShader.activate();
 		lightShader.setMat4("projection", projection);
@@ -278,10 +273,7 @@ int main() {
 
 		camera.SetZoom(fov);
 
-
-
-		ImGui::Render();
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		gui.endFrame();
 
 
 		processInput(window.getGLFWwindow());
@@ -290,6 +282,7 @@ int main() {
 
 
 	}
+	
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteVertexArrays(1, &lightCubeVAO);
 	glDeleteBuffers(1, &VBO);
