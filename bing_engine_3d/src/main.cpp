@@ -71,7 +71,9 @@ glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
 std::string glsl_version = "#version 330 core";
 
+bool wireframeMode = false;
 int main() {
+
 	double lastTime = glfwGetTime();
 	int nbFrames = 0;
 
@@ -136,18 +138,6 @@ int main() {
 			-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 	};
 
-	glm::vec3 positions[] = {
-		glm::vec3(0.0f,  0.0f,  0.0f),
-		glm::vec3(2.0f,  5.0f, -15.0f),
-		glm::vec3(-1.5f, -2.2f, -2.5f),
-		glm::vec3(-3.8f, -2.0f, -12.3f),
-		glm::vec3(2.4f, -0.4f, -3.5f),
-		glm::vec3(-1.7f,  3.0f, -7.5f),
-		glm::vec3(1.3f, -2.0f, -2.5f),
-		glm::vec3(1.5f,  2.0f, -2.5f),
-		glm::vec3(1.5f,  0.2f, -1.5f),
-		glm::vec3(-1.3f,  1.0f, -1.5f)
-	};
 
 
 	// VAO, VBO
@@ -191,6 +181,9 @@ int main() {
 	glfwSwapInterval(0);
 
 	ImVec2 win1 = { 300.0f, 150.0f };
+	float x = 0.0f;
+	float y = 0.0f;
+	float z = 0.0f;
 
 
 	while (!glfwWindowShouldClose(GLFW_WINDOW)) {
@@ -198,6 +191,16 @@ int main() {
 			std::string windowName = u8"中国天然橡胶1个 |  FPS: " + std::to_string(nbFrames) + "     |  Bing Chilling Engine " + u8"\U0001F368";
 			glfwSetWindowTitle(window.getGLFWwindow(), windowName.c_str());
 		}
+
+
+		if (glfwGetKey(GLFW_WINDOW, GLFW_KEY_G) == GLFW_PRESS) {
+			wireframeMode = !wireframeMode;
+		}
+
+		// Set the polygon mode based on the wireframe mode
+		glPolygonMode(GL_FRONT_AND_BACK, wireframeMode ? GL_LINE : GL_FILL);
+
+
 
 
 
@@ -208,6 +211,9 @@ int main() {
 			nbFrames = 0;
 			lastTime += 1.0;
 		}
+
+		//Polygon
+		
 
 
 		//frame logic
@@ -242,25 +248,23 @@ int main() {
 		glm::mat4 view = camera.GetViewMatrix();
 		cubeShader.setMat4("view", view);
 
-		//float light_x = static_cast<float>(sin(glfwGetTime()) * 8);
-		//float light_y = static_cast<float>(sin(glfwGetTime()) * 12);
-		//float light_z = static_cast<float>(cos(glfwGetTime()) * 5);
-
 		lightPos = glm::normalize(glm::vec3(light_x, light_y, light_z));
 
 		glm::mat4 model = glm::mat4(1.0f);
 		//model = glm::translate(model, lightPos);
 		cubeShader.setMat4("model", model);
 		glBindVertexArray(VAO);
-		for (unsigned int i = 0; i < 10; i++)
-		{
-			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::translate(model, positions[i]);
-			float angle = 20.0f * i;
-			//model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-			cubeShader.setMat4("model", model);
-
-			glDrawArrays(GL_TRIANGLES, 0, 36);
+		float cubeSize = 1.0f; // size of each cube
+		glm::vec3 startPos = glm::vec3(-cubeSize * 2.0f, cubeSize * 2.0f, cubeSize * 2.0f); // starting position of the cube
+		for (unsigned int i = 0; i < 10; i++) {
+			for (unsigned int j = 0; j < 10; j++) {
+				for (unsigned int k = 0; k < 10; k++) {
+					glm::mat4 model = glm::mat4(1.0f);
+					model = glm::translate(model, startPos + glm::vec3(i * cubeSize, j * cubeSize, k * cubeSize));
+					cubeShader.setMat4("model", model);
+					glDrawArrays(GL_TRIANGLES, 0, 36);
+				}
+			}
 		}
 
 		glBindVertexArray(VAO); 
@@ -295,8 +299,6 @@ int main() {
 		processInput(window.getGLFWwindow());
 		glfwSwapBuffers(GLFW_WINDOW);
 		glfwPollEvents();
-
-
 	}
 	
 	glDeleteVertexArrays(1, &VAO);
