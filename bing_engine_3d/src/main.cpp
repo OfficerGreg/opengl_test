@@ -37,6 +37,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 //zoom
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
+void toggleFullscreen(GLFWwindow* window);
 
 static float mixTex = 0.0f;
 
@@ -84,7 +85,6 @@ int main() {
 	glfwSetFramebufferSizeCallback(GLFW_WINDOW, framebuff_size_callback);
 	//init imGui
 	Gui gui(GLFW_WINDOW, glsl_version);
-
 
 
 	//Shader
@@ -136,6 +136,20 @@ int main() {
 			-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
 	};
 
+	glm::vec3 positions[] = {
+		glm::vec3(0.0f,  0.0f,  0.0f),
+		glm::vec3(2.0f,  5.0f, -15.0f),
+		glm::vec3(-1.5f, -2.2f, -2.5f),
+		glm::vec3(-3.8f, -2.0f, -12.3f),
+		glm::vec3(2.4f, -0.4f, -3.5f),
+		glm::vec3(-1.7f,  3.0f, -7.5f),
+		glm::vec3(1.3f, -2.0f, -2.5f),
+		glm::vec3(1.5f,  2.0f, -2.5f),
+		glm::vec3(1.5f,  0.2f, -1.5f),
+		glm::vec3(-1.3f,  1.0f, -1.5f)
+	};
+
+
 	// VAO, VBO
 	unsigned int VAO, VBO;
 	glGenVertexArrays(1, &VAO);
@@ -172,7 +186,6 @@ int main() {
 
 
 
-	Sphere sphere(15);
 
 	//disable vsync
 	glfwSwapInterval(0);
@@ -238,6 +251,17 @@ int main() {
 		glm::mat4 model = glm::mat4(1.0f);
 		//model = glm::translate(model, lightPos);
 		cubeShader.setMat4("model", model);
+		glBindVertexArray(VAO);
+		for (unsigned int i = 0; i < 10; i++)
+		{
+			glm::mat4 model = glm::mat4(1.0f);
+			model = glm::translate(model, positions[i]);
+			float angle = 20.0f * i;
+			//model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+			cubeShader.setMat4("model", model);
+
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 
 		glBindVertexArray(VAO); 
 		glDrawArrays(GL_TRIANGLES, 0, 36);
@@ -254,14 +278,6 @@ int main() {
 		glBindVertexArray(lightCubeVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
-		//cubeShader.activate();
-		glm::mat4 sphere_model = glm::mat4(1.0f);
-		const float radiusS = 5.0f;
-		float camXS = static_cast<float>(sin(glfwGetTime()) * radiusS);
-		float camZS = static_cast<float>(cos(glfwGetTime()) * radiusS);
-		sphere_model = glm::translate(sphere_model, glm::vec3(camXS, camXS, camZS));
-		lightShader.setMat4("model", sphere_model);
-		sphere.draw(cubeShader.id);
 
 		// render your GUI
 		ImGui::Begin("Properties");
@@ -347,6 +363,10 @@ void processInput(GLFWwindow* window) {
 		tab_pressed_last_frame = false;
 	}
 
+	if (glfwGetKey(window, GLFW_KEY_F11) == GLFW_PRESS) {
+		toggleFullscreen(window);
+	}
+
 }
 
 void framebuff_size_callback(GLFWwindow* window, int width, int height) {
@@ -383,3 +403,34 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
 	camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }
 
+void toggleFullscreen(GLFWwindow* window) {
+	static bool isFullscreen = false;
+	static double lastToggleTime = 0.0;
+
+	// Get the current time
+	double currentTime = glfwGetTime();
+
+	// Ignore subsequent calls that occur too soon after the last toggle
+	if (currentTime - lastToggleTime < 0.2) {
+		return;
+	}
+
+	lastToggleTime = currentTime;
+
+	if (isFullscreen) {
+		int max_width = GetSystemMetrics(SM_CXSCREEN);
+		int max_height = GetSystemMetrics(SM_CYSCREEN);
+		// If the window is currently in fullscreen mode, switch to windowed mode
+		glfwSetWindowMonitor(window, nullptr, (max_width - SCREEN_WIDTH) / 2, (max_height - SCREEN_HEIGHT) / 2, 
+			SCREEN_WIDTH, SCREEN_HEIGHT, GLFW_DONT_CARE);
+		isFullscreen = false;
+		spdlog::info("Windowed Mode");
+	}
+	else {
+		// If the window is currently in windowed mode, switch to fullscreen mode
+		const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+		glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, mode->width, mode->height, mode->refreshRate);
+		isFullscreen = true;
+		spdlog::info("Fullscreen Mode");
+	}
+}
