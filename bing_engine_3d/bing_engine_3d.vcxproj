@@ -132,6 +132,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Renderer.cpp" />
     <ClCompile Include="src\mesh\Cube.cpp" />
     <ClCompile Include="src\Gui.cpp" />
     <ClCompile Include="src\mesh\Sphere.cpp" />
@@ -153,6 +154,7 @@
     <None Include="src\shaders\vertex_core.glsl" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Renderer.h" />
     <ClInclude Include="src\mesh\Cube.h" />
     <ClInclude Include="src\Gui.h" />
     <ClInclude Include="src\Camera.h" />
