@@ -1,438 +1,359 @@
-﻿//opoengl
+﻿#include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <stb_image.h>
 
-//img loading
-#include "stb_image.h"
+#include <fstream>
+#include <sstream>
+#include <streambuf>
+#include <string>
 
-#include "Gui.h"
-
-//logging
-#include <spdlog/spdlog.h>
-//math
-
+#include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "Shader.h"
+#include "io/keyboard.h"
+#include "io/mouse.h"
+#include "io/joystick.h"
+#include "io/screen.h"
+#include "io/camera.h"
 
+void processInput(GLFWwindow* window, double deltaTime);
 
-//mesh
-#include "mesh/Sphere.h";
+float mixVal = 0.5f;
 
-#include "Window.h"
-#include "Camera.h"
+Joystick mainJ(0);
+Camera Camera::defaultCamera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera Camera::secondary(glm::vec3(5.0f, 5.0f, 5.0f));
+bool Camera::usingDefault = true;
 
+double deltaTime = 0.0f; // tme btwn frames
+double lastFrame = 0.0f; // time of last frame
 
-#define GLFW_WINDOW window.getGLFWwindow()
-
-//resize window
-void framebuff_size_callback(GLFWwindow* window, int width, int height);
-
-//I/O handling
-void processInput(GLFWwindow* window);
-
-//camera mouse 
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-
-//zoom
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-
-void toggleFullscreen(GLFWwindow* window);
-
-static float mixTex = 0.0f;
-
-uint16_t SCREEN_WIDTH = 1400;
-uint16_t SCREEN_HEIGHT = 900;
-
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
-float lastX = SCREEN_WIDTH / 2.0f;
-float lastY = SCREEN_HEIGHT / 2.0f;
-bool firstMouse = true;
-
-
-//camera pos
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-
-
-float deltaTime = 0.0f;	// Time between current frame and last frame
-float lastFrame = 0.0f; // Time of last frame
-
-//tab-out
-bool mouse_locked = true;  // flag to keep track of whether the mouse is locked or not
-bool tab_pressed_last_frame = false;  // flag to keep track of whether the tab key was pressed last frame or not
-static bool center_on_cursor = false;
-glm::vec3 center = glm::vec3(1.0f);
-
-
-// lighting
-glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
-
-std::string glsl_version = "#version 330 core";
-
-bool wireframeMode = false;
 int main() {
+	int success;
+	char infoLog[512];
 
-	double lastTime = glfwGetTime();
-	int nbFrames = 0;
+	std::cout << "Hello, world!" << std::endl;
 
-	Window window(SCREEN_WIDTH, SCREEN_HEIGHT, u8"中国天然橡胶1个");
-	GLFWwindow* glfwWindow = window.getGLFWwindow();
-	framebuff_size_callback(window.getGLFWwindow(), SCREEN_WIDTH, SCREEN_HEIGHT);
-	//mouse
-	glfwSetCursorPosCallback(GLFW_WINDOW, mouse_callback);
-	glfwSetScrollCallback(GLFW_WINDOW, scroll_callback);
-	glfwSetInputMode(GLFW_WINDOW, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwSetFramebufferSizeCallback(GLFW_WINDOW, framebuff_size_callback);
-	//init imGui
-	Gui gui(GLFW_WINDOW, glsl_version);
+	glfwInit();
 
+	// openGL version 3.3
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
-	//Shader
-	Shader cubeShader("src/shaders/cube_vert.glsl", "src/shaders/cube_frag.glsl");
-	Shader lightShader("src/shaders/lighting_vert.glsl", "src/shaders/lighting_frag.glsl");
-	
-	//Cube
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+# ifdef __APPLE__
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COPMPAT, GL_TRUE);
+#endif
+
+	GLFWwindow* window = glfwCreateWindow(Screen::SCR_WIDTH, Screen::SCR_HEIGHT, "OpenGL Tutorial", NULL, NULL);
+	if (window == NULL) { // window not created
+		std::cout << "Could not create window." << std::endl;
+		glfwTerminate();
+		return -1;
+	}
+	glfwMakeContextCurrent(window);
+
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+		std::cout << "Failed to initialize GLAD" << std::endl;
+		glfwTerminate();
+		return -1;
+	}
+
+	glViewport(0, 0, 800, 600);
+
+	glfwSetFramebufferSizeCallback(window, Screen::framebufferSizeCallback);
+
+	glfwSetKeyCallback(window, Keyboard::keyCallback);
+
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // disable cursor
+	glfwSetCursorPosCallback(window, Mouse::cursorPosCallback);
+	glfwSetMouseButtonCallback(window, Mouse::mouseButtonCallback);
+	glfwSetScrollCallback(window, Mouse::mouseWheelCallback);
+
+	// SHADERS===============================
+	Shader shader("src/shaders/vertex_core.glsl", "src/shaders/fragment_core.glsl");
+
+	glEnable(GL_DEPTH_TEST);
+
 	float vertices[] = {
-			-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-			 0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-			 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-			 0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-			-0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-			-0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 
-			-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-			 0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-			 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-			 0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-			-0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-			-0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
 
-			-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-			-0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-			-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-			-0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-			-0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-			-0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 
-			 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-			 0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-			 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-			 0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-			 0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-			 0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
 
-			-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-			 0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-			 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-			 0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-			-0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-			-0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
 
-			-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-			 0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-			 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-			 0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-			-0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-			-0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 	};
 
+	//float vertices[] = {
+	//	// positions		// colors			// texture coordinates
+	//	-0.5f, -0.5f, 0.0f,	1.0f, 1.0f, 0.5f,	0.0f, 0.0f,	// bottom left
+	//	-0.5f, 0.5f, 0.0f,	0.5f, 1.0f, 0.75f,	0.0f, 1.0f,	// top left
+	//	0.5f, -0.5f, 0.0f,	0.6f, 1.0f, 0.2f,	1.0f, 0.0f,	// bottom right
+	//	0.5f, 0.5f, 0.0f,	1.0f, 0.2f, 1.0f,	1.0f, 1.0f	// top right
+	//};
+	unsigned int indices[] = {
+		0, 1, 2, // first triangle
+		3, 1, 2  // second triangle
+	};
 
-
-	// VAO, VBO
-	unsigned int VAO, VBO;
-	glGenVertexArrays(1, &VAO);
+	// VBO, VAO, EBO
+	unsigned int VBO, VAO, EBO;
 	glGenBuffers(1, &VBO);
+	glGenVertexArrays(1, &VAO);
+	//glGenBuffers(1, &EBO);
 
-	// bind VAO 
+	// bind VAO
 	glBindVertexArray(VAO);
 
 	// bind VBO
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //GL_DYNAMIC_DRAW = change every frame
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	//positions
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	// put index array in EBO
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+	// set attributes pointers
+	// position
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-	// normal attribute
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
+	// color
+	//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	//glEnableVertexAttribArray(1);
+	// texture coordinate attribute
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(2);
 
+	// TEXTURES_____________________________________
 
+	// generate texture
+	unsigned int texture1, texture2;
 
-	float fov = 45.0f;
+	glGenTextures(1, &texture1);
+	glBindTexture(GL_TEXTURE_2D, texture1);
 
-	//lighting
-	unsigned int lightCubeVAO;
-	glGenVertexArrays(1, &lightCubeVAO);
-	glBindVertexArray(lightCubeVAO);
+	// image wrap (s, t, r) = (x, y, z)
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-	// we only need to bind to the VBO (to link it with glVertexAttribPointer), no need to fill it; the VBO's data already contains all we need (it's already bound, but we do it again for educational purposes)
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	// border color
+	float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
+	// image filtering
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); // scale up -> blend colors
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
+	// load image 1
+	int width, height, nChannels;
+	stbi_set_flip_vertically_on_load(true);
+	unsigned char* data = stbi_load("assets/image1.png", &width, &height, &nChannels, 0);
 
+	if (data) {
+		// RGBA because png
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else {
+		std::cout << "Failed to load texture" << std::endl;
+	}
 
+	stbi_image_free(data);
 
-	//disable vsync
-	glfwSwapInterval(0);
+	glGenTextures(1, &texture2);
+	glBindTexture(GL_TEXTURE_2D, texture2);
 
-	ImVec2 win1 = { 300.0f, 150.0f };
-	float x = 0.0f;
-	float y = 0.0f;
-	float z = 0.0f;
+	// load image 2
+	data = stbi_load("assets/image2.jpg", &width, &height, &nChannels, 0);
 
+	if (data) {
+		// RGBA because png
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else {
+		std::cout << "Failed to load texture" << std::endl;
+	}
 
-	while (!glfwWindowShouldClose(GLFW_WINDOW)) {
-		if (glfwGetTime() - lastTime >= 1.0) {
-			std::string windowName = u8"中国天然橡胶1个 |  FPS: " + std::to_string(nbFrames) + "     |  Bing Chilling Engine " + u8"\U0001F368";
-			glfwSetWindowTitle(window.getGLFWwindow(), windowName.c_str());
-		}
+	stbi_image_free(data);
 
+	shader.activate();
+	shader.setInt("texture1", 0);
+	shader.setInt("texture2", 1);
 
-		if (glfwGetKey(GLFW_WINDOW, GLFW_KEY_G) == GLFW_PRESS) {
-			wireframeMode = !wireframeMode;
-		}
+	// transformation
+	/*glm::mat4 trans = glm::mat4(1.0f);
+	trans = glm::rotate(trans, glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	trans = glm::scale(trans, glm::vec3(0.5f, 1.5f, 0.5f));
+	shader.activate();
+	shader.setMat4("transform", trans);*/
 
-		// Set the polygon mode based on the wireframe mode
-		glPolygonMode(GL_FRONT_AND_BACK, wireframeMode ? GL_LINE : GL_FILL);
+	mainJ.update();
+	if (mainJ.isPresent()) {
+		std::cout << mainJ.getName() << " is present." << std::endl;
+	}
 
-
-
-
-
+	while (!glfwWindowShouldClose(window)) {
+		// calculate dt
 		double currentTime = glfwGetTime();
-		nbFrames++;
-		if (currentTime - lastTime >= 1.0) { // If last prinf() was more than 1 sec ago
-			spdlog::info("{}", nbFrames);
-			nbFrames = 0;
-			lastTime += 1.0;
-		}
+		deltaTime = currentTime - lastFrame;
+		lastFrame = currentTime;
 
-		//Polygon
-		
+		// process input
+		processInput(window, deltaTime);
 
-
-		//frame logic
-		float currentFrame = static_cast<float>(glfwGetTime());
-		deltaTime = currentFrame - lastFrame;
-		lastFrame = currentFrame;
-
-		glEnable(GL_DEPTH_TEST);
-
-
-		//background color
-		glClearColor(0.55f, 0.0f, 1.0f, 0.0f);
+		// render
+		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		// bind texture
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture1);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, texture2);
 
-		gui.beginFrame();
-
-
-		cubeShader.activate();
-		cubeShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
-		float light_x = static_cast<float>(sin(glfwGetTime()) * 8);
-		float light_y = static_cast<float>(sin(glfwGetTime()) * 12);
-		float light_z = static_cast<float>(cos(glfwGetTime()) * 5);
-		cubeShader.setVec3("lightColor", light_x, light_y, light_z);
-		cubeShader.setVec3("lightPos", lightPos);
-		cubeShader.setVec3("viewPos", camera.Position);
-
-		//camera
-		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
-		cubeShader.setMat4("projection", projection);
-		// camera/view transformation
-		glm::mat4 view = camera.GetViewMatrix();
-		cubeShader.setMat4("view", view);
-
-		lightPos = glm::normalize(glm::vec3(light_x, light_y, light_z));
-
-		glm::mat4 model = glm::mat4(1.0f);
-		//model = glm::translate(model, lightPos);
-		cubeShader.setMat4("model", model);
+		// draw shapes
 		glBindVertexArray(VAO);
-		float cubeSize = 1.0f; // size of each cube
-		glm::vec3 startPos = glm::vec3(-cubeSize * 2.0f, cubeSize * 2.0f, cubeSize * 2.0f); // starting position of the cube
-		for (unsigned int i = 0; i < 10; i++) {
-			for (unsigned int j = 0; j < 10; j++) {
-				for (unsigned int k = 0; k < 10; k++) {
-					glm::mat4 model = glm::mat4(1.0f);
-					model = glm::translate(model, startPos + glm::vec3(i * cubeSize, j * cubeSize, k * cubeSize));
-					cubeShader.setMat4("model", model);
-					glDrawArrays(GL_TRIANGLES, 0, 36);
-				}
-			}
-		}
+		//glDrawArrays(GL_TRIANGLES, 0, 3);
+		shader.activate();
+		// set color
+		//float timeValue = glfwGetTime();
+		//float blueValue = (sin(timeValue) / 2.0f) + 0.5f;
+		//shader.set4Float("ourColor", 0.0f, 0.0f, blueValue, 1.0f);
+		//trans = glm::rotate(trans, glm::radians(timeValue / 100), glm::vec3(0.1f, 0.1f, 0.1f));
+		//shader.setMat4("transform", trans);
 
-		glBindVertexArray(VAO); 
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		//lamp cube
+		shader.setFloat("mixVal", mixVal);
 
-		lightShader.activate();
-		lightShader.setMat4("projection", projection);
-		lightShader.setMat4("view", view);
-		model = glm::mat4(1.0f);
-		model = glm::translate(model, lightPos);
-		model = glm::scale(model, glm::vec3(0.2f));
-		lightShader.setMat4("model", model);
-
-		glBindVertexArray(lightCubeVAO);
+		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
+		//trans = glm::translate(trans, glm::vec3(0.5f, 0.5f, 0.0f));
+		//shader.setMat4("transform", trans);
+		// draw second rectangle
+		/*glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		trans = glm::translate(trans, glm::vec3(-0.5f, -0.5f, 0.0f));
+		shader.setMat4("transform", trans);*/
 
-		// render your GUI
-		ImGui::Begin("Properties");
-		ImGui::SetWindowSize(win1, 0);
-		ImGui::SliderFloat("texture mix", &mixTex, 0, 1 );
-		ImGui::SetWindowSize(win1, 0);
-		ImGui::SliderFloat("Fov", &fov, 0, 90);
-		ImGui::End();
+		// create transformation
+		glm::mat4 model = glm::mat4(1.0f);
+		glm::mat4 view = glm::mat4(1.0f);
+		glm::mat4 projection = glm::mat4(1.0f);
+		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(-55.0f), glm::vec3(0.5f, 0.5f, 0.5f));
+		view = Camera::usingDefault ? Camera::defaultCamera.getViewMatrix() : Camera::secondary.getViewMatrix();
+		projection = glm::perspective(
+			glm::radians(Camera::usingDefault ? Camera::defaultCamera.zoom : Camera::secondary.zoom),
+			(float)Screen::SCR_WIDTH / (float)Screen::SCR_HEIGHT, 0.1f, 100.0f);
 
-		camera.SetZoom(fov);
+		shader.setMat4("model", model);
+		shader.setMat4("view", view);
+		shader.setMat4("projection", projection);
 
-		gui.endFrame();
+		glBindVertexArray(0);
 
-
-		processInput(window.getGLFWwindow());
-		glfwSwapBuffers(GLFW_WINDOW);
+		// send new frame to window
+		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
-	
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteVertexArrays(1, &lightCubeVAO);
-	glDeleteBuffers(1, &VBO);
-	glfwTerminate();
 
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteVertexArrays(1, &VBO);
+	//glDeleteBuffers(1, &EBO);
+
+	glfwTerminate();
 	return 0;
 }
 
-void processInput(GLFWwindow* window) {
-
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+void processInput(GLFWwindow* window, double deltaTime) {
+	if (Keyboard::key(GLFW_KEY_ESCAPE)) {
 		glfwSetWindowShouldClose(window, true);
-	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-		mixTex += 0.1f;
-		if (mixTex > 1.0f) {
-			mixTex = 1.0f;
+	}
+
+	// change mix value
+	if (Keyboard::key(GLFW_KEY_UP)) {
+		mixVal += .05f;
+		if (mixVal > 1) {
+			mixVal = 1.0f;
 		}
 	}
-	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-		mixTex -= 0.1f;
-		if (mixTex < 0.0f) {
-			mixTex = 0.0f;
-		}
-	
-	}
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-		camera.ProcessKeyboard(FORWARD, deltaTime * 2.0f);
-	}
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-		camera.ProcessKeyboard(FORWARD, deltaTime);
-	}
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-		camera.ProcessKeyboard(BACKWARD, deltaTime);
-	}
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-		camera.ProcessKeyboard(LEFT, deltaTime);
-	}
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-		camera.ProcessKeyboard(RIGHT, deltaTime);
-	}
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
-		camera.ProcessKeyboard(UP, deltaTime);
-	}
-	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
-		camera.ProcessKeyboard(DOWN, deltaTime);
-	}
-
-	if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS) {
-		if (!tab_pressed_last_frame) {
-			tab_pressed_last_frame = true;
-			mouse_locked = !mouse_locked;
-			if (mouse_locked) {
-				double xpos, ypos;
-				glfwGetCursorPos(window, &xpos, &ypos);
-				lastX = static_cast<float>(xpos);
-				lastY = static_cast<float>(ypos);
-			}
-			glfwSetInputMode(window, GLFW_CURSOR, mouse_locked ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+	if (Keyboard::key(GLFW_KEY_DOWN)) {
+		mixVal -= .05f;
+		if (mixVal < 0) {
+			mixVal = 0.0f;
 		}
 	}
-	else {
-		tab_pressed_last_frame = false;
+
+	// update camera
+	if (Keyboard::keyWentDown(GLFW_KEY_TAB)) {
+		Camera::usingDefault = !Camera::usingDefault;
 	}
 
-	if (glfwGetKey(window, GLFW_KEY_F11) == GLFW_PRESS) {
-		toggleFullscreen(window);
+	// move camera
+	CameraDirection direction = CameraDirection::NONE;
+
+	if (Keyboard::key(GLFW_KEY_W)) {
+		direction = CameraDirection::FORWARD;
+	}
+	if (Keyboard::key(GLFW_KEY_S)) {
+		direction = CameraDirection::BACKWARD;
+	}
+	if (Keyboard::key(GLFW_KEY_D)) {
+		direction = CameraDirection::RIGHT;
+	}
+	if (Keyboard::key(GLFW_KEY_A)) {
+		direction = CameraDirection::LEFT;
+	}
+	if (Keyboard::key(GLFW_KEY_SPACE)) {
+		direction = CameraDirection::UP;
+	}
+	if (Keyboard::key(GLFW_KEY_LEFT_SHIFT)) {
+		direction = CameraDirection::DOWN;
 	}
 
-}
-
-void framebuff_size_callback(GLFWwindow* window, int width, int height) {
-	glViewport(0, 0, width, height);
-}
-
-void mouse_callback(GLFWwindow* window, double xposIn, double yposIn){
-	if (mouse_locked) {
-		float xpos = static_cast<float>(xposIn);
-		float ypos = static_cast<float>(yposIn);
-
-		if (firstMouse)
-		{
-			lastX = xpos;
-			lastY = ypos;
-			firstMouse = false;
+	if ((int)direction) {
+		if (Camera::usingDefault) {
+			Camera::defaultCamera.updateCameraPos(direction, deltaTime);
 		}
-
-		float xoffset = xpos - lastX;
-		float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
-
-		lastX = xpos;
-		lastY = ypos;
-
-		camera.ProcessMouseMovement(xoffset, yoffset);
-	}else if (center_on_cursor) {
-		float xpos = static_cast<float>(xposIn);
-		float ypos = static_cast<float>(yposIn);
-		center = glm::vec3(xpos, ypos, 0.0f);
-	}
-}
-
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
-	camera.ProcessMouseScroll(static_cast<float>(yoffset));
-}
-
-void toggleFullscreen(GLFWwindow* window) {
-	static bool isFullscreen = false;
-	static double lastToggleTime = 0.0;
-
-	// Get the current time
-	double currentTime = glfwGetTime();
-
-	// Ignore subsequent calls that occur too soon after the last toggle
-	if (currentTime - lastToggleTime < 0.2) {
-		return;
-	}
-
-	lastToggleTime = currentTime;
-
-	if (isFullscreen) {
-		int max_width = GetSystemMetrics(SM_CXSCREEN);
-		int max_height = GetSystemMetrics(SM_CYSCREEN);
-		// If the window is currently in fullscreen mode, switch to windowed mode
-		glfwSetWindowMonitor(window, nullptr, (max_width - SCREEN_WIDTH) / 2, (max_height - SCREEN_HEIGHT) / 2, 
-			SCREEN_WIDTH, SCREEN_HEIGHT, GLFW_DONT_CARE);
-		isFullscreen = false;
-		spdlog::info("Windowed Mode");
-	}
-	else {
-		// If the window is currently in windowed mode, switch to fullscreen mode
-		const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-		glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, mode->width, mode->height, mode->refreshRate);
-		isFullscreen = true;
-		spdlog::info("Fullscreen Mode");
+		else {
+			Camera::secondary.updateCameraPos(direction, deltaTime);
+		}
 	}
 }

@@ -132,10 +132,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\io\Camera.cpp" />
+    <ClCompile Include="src\io\Screen.cpp" />
     <ClCompile Include="src\Renderer.cpp" />
-    <ClCompile Include="src\mesh\Cube.cpp" />
     <ClCompile Include="src\Gui.cpp" />
-    <ClCompile Include="src\mesh\Sphere.cpp" />
     <ClCompile Include="src\io\Joystick.cpp" />
     <ClCompile Include="src\io\Keyboard.cpp" />
     <ClCompile Include="src\io\Mouse.cpp" />
@@ -154,11 +154,11 @@
     <None Include="src\shaders\vertex_core.glsl" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\io\Screen.h" />
+    <ClInclude Include="src\io\Camera.h" />
     <ClInclude Include="src\Renderer.h" />
-    <ClInclude Include="src\mesh\Cube.h" />
     <ClInclude Include="src\Gui.h" />
     <ClInclude Include="src\Camera.h" />
-    <ClInclude Include="src\mesh\Sphere.h" />
     <ClInclude Include="src\io\Joystick.h" />
     <ClInclude Include="src\io\Keyboard.h" />
     <ClInclude Include="src\io\Mouse.h" />

@@ -1,4 +1,5 @@
-#include "Mouse.h"
+#include "mouse.h"
+#include "camera.h"
 
 double Mouse::x = 0;
 double Mouse::y = 0;
@@ -9,16 +10,12 @@ double Mouse::lastY = 0;
 double Mouse::dx = 0;
 double Mouse::dy = 0;
 
-double Mouse::scrollDX = 0;
-double Mouse::scrollDY = 0;
-
 bool Mouse::firstMouse = true;
 
 bool Mouse::buttons[GLFW_MOUSE_BUTTON_LAST] = { 0 };
 bool Mouse::buttonsChanged[GLFW_MOUSE_BUTTON_LAST] = { 0 };
 
-
-void Mouse::cursosPosCallback(GLFWwindow* window, double _x, double _y){
+void Mouse::cursorPosCallback(GLFWwindow* window, double _x, double _y) {
 	x = _x;
 	y = _y;
 
@@ -29,13 +26,19 @@ void Mouse::cursosPosCallback(GLFWwindow* window, double _x, double _y){
 	}
 
 	dx = x - lastX;
-	dy = lastY - y; //inverted
-	lastX = y;
+	dy = lastY - y; // y coordinates are inverted
+	lastX = x;
 	lastY = y;
+
+	if (Camera::usingDefault) {
+		Camera::defaultCamera.updateCameraDirection(dx, dy);
+	}
+	else {
+		Camera::secondary.updateCameraDirection(dx, dy);
+	}
 }
 
-
-void Mouse::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods){
+void Mouse::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
 	if (action != GLFW_RELEASE) {
 		if (!buttons[button]) {
 			buttons[button] = true;
@@ -47,54 +50,45 @@ void Mouse::mouseButtonCallback(GLFWwindow* window, int button, int action, int 
 	buttonsChanged[button] = action != GLFW_REPEAT;
 }
 
-void Mouse::mouseWheelCallback(GLFWwindow* window, double dx, double dy){
-	scrollDX = dx;
-	scrollDY = dy;
+void Mouse::mouseWheelCallback(GLFWwindow* window, double dx, double dy) {
+	if (Camera::usingDefault) {
+		Camera::defaultCamera.updateCameraZoom(dy);
+	}
+	else {
+		Camera::secondary.updateCameraZoom(dy);
+	}
 }
 
-double Mouse::getMouseX(){
+double Mouse::getMouseX() {
 	return x;
 }
 
-double Mouse::getMouseY(){
+double Mouse::getMouseY() {
 	return y;
 }
 
-double Mouse::getDX(){
-	double _dx = dx;
-	dx = 0;
-	return _dx;
-}
-
-double Mouse::getDY(){
-	double _dy = dy;
-	dy = 0;
-	return _dy;
-}
-
-
-double Mouse::getScrollDX(){
-	double dx = scrollDX;
-	scrollDX = 0;
+double Mouse::getDX() {
 	return dx;
 }
-double Mouse::getScrollDY(){
-	double dy = scrollDY;
-	scrollDY = 0;
+
+double Mouse::getDY() {
 	return dy;
 }
 
-bool Mouse::buttonChanged(int button){
+bool Mouse::button(int button) {
+	return buttons[button];
+}
+
+bool Mouse::buttonChanged(int button) {
 	bool ret = buttonsChanged[button];
 	buttonsChanged[button] = false;
 	return ret;
 }
-bool Mouse::buttonPressed(int button){
-	return buttons[button] && buttonChanged(button);
-}
-bool Mouse::buttonReleased(int button){
+
+bool Mouse::buttonWentUp(int button) {
 	return !buttons[button] && buttonChanged(button);
 }
-bool Mouse::button(int button){
-	return buttons[button];
+
+bool Mouse::buttonWentDown(int button) {
+	return buttons[button] && buttonChanged(button);
 }
