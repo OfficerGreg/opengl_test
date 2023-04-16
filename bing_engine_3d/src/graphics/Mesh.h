@@ -19,4 +19,24 @@ struct Vertex{
 };
 typedef struct Vertex Vertex;
 
+class Mesh {
+public:
+	std::vector<Vertex> vertices;
+	std::vector<unsigned int> indices;
+	unsigned int VAO;
+
+	std::vector<Texture> textures;
+
+	Mesh();
+	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<Texture> textures);
+
+	void render(Shader shader);
+
+	void cleanup();
+private:
+	unsigned int VBO, EBO;
+
+	void setup();
+};
+
 #endif // !MESH_H
