@@ -68,7 +68,7 @@ int main() {
 	Shader shader("src/shaders/vertex.shader", "src/shaders/fragment.shader");
 
 
-	Block block(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.75f));
+	Block block(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(1.0f));
 	block.init();
 	
 	mainJ.update();
