@@ -11,6 +11,8 @@
 #include "graphics/Shader.h"
 #include "graphics/Texture.h"
 
+#include "graphics/block/Block.h"
+
 #include "io/Keyboard.h"
 #include "io/Mouse.h"
 #include "io/Joystick.h"
@@ -65,84 +67,10 @@ int main() {
 	// SHADERS===============================
 	Shader shader("src/shaders/vertex.shader", "src/shaders/fragment.shader");
 
-	float vertices[] = {
-		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
 
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-	};
-
-	// VBO, VAO, EBO
-	unsigned int VBO, VAO, EBO;
-	glGenBuffers(1, &VBO);
-	glGenVertexArrays(1, &VAO);
-	//glGenBuffers(1, &EBO);
-
-	// bind VAO
-	glBindVertexArray(VAO);
-
-	// bind VBO
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-
-	// set attributes pointers
-	// position
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(2);
-
-	//Texturess
-
-	Texture texture1("assets/image1.png", "texture1");
-	Texture texture2("assets/image3.jpg", "texture2");
-
-	texture1.load();
-	texture2.load();
-
-	shader.activate();
-	shader.setInt("texture1", texture1.id);
-	shader.setInt("texture2", texture2.id);
-
+	Block block(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.75f));
+	block.init();
+	
 	mainJ.update();
 	if (mainJ.isPresent()) {
 		std::cout << mainJ.getName() << " is present." << std::endl;
@@ -159,45 +87,30 @@ int main() {
 
 		screen.update();
 
-		// bind texture
-		glActiveTexture(GL_TEXTURE0);
-		texture1.bind();
-		glActiveTexture(GL_TEXTURE1);
-		texture2.bind();
-		// draw shapes
-		glBindVertexArray(VAO);
 		shader.activate();
-
 
 		shader.setFloat("mixVal", mixVal);
 
-		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		// create transformation
-		glm::mat4 model = glm::mat4(1.0f);
 		glm::mat4 view = glm::mat4(1.0f);
 		glm::mat4 projection = glm::mat4(1.0f);
-		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(-55.0f), glm::vec3(0.5f, 0.5f, 0.5f));
 		view = Camera::usingDefault ? Camera::defaultCamera.getViewMatrix() : Camera::secondary.getViewMatrix();
 		projection = glm::perspective(
 			glm::radians(Camera::usingDefault ? Camera::defaultCamera.getZoom() : Camera::secondary.getZoom()),
 			(float)Screen::SCR_WIDTH / (float)Screen::SCR_HEIGHT, 0.1f, 100.0f);
 
-		shader.setMat4("model", model);
 		shader.setMat4("view", view);
 		shader.setMat4("projection", projection);
 
-		glBindVertexArray(0);
+		block.render(shader);
 
 		screen.newFrame();
 
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_MULTISAMPLE);
 	}
-
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteVertexArrays(1, &VBO);
-	//glDeleteBuffers(1, &EBO);
+	block.cleanup();
 
 	glfwTerminate();
 	return 0;
