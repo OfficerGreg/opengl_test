@@ -25,10 +25,10 @@ bool Keyboard::keyChanged(int key) {
 	return ret;
 }
 
-bool Keyboard::keyWentDown(int key) {
+bool Keyboard::keyPressed(int key) {
 	return keys[key] && keyChanged(key);
 }
 
-bool Keyboard::keyWentUp(int key) {
+bool Keyboard::keyReleased(int key) {
 	return !keys[key] && keyChanged(key);
 }

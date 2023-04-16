@@ -42,6 +42,8 @@ public:
 	void updateCameraPos(CameraDirection direction, double dt); // keyboard input
 	void updateCameraZoom(double dy); // scroll wheel
 
+	float getZoom();
+
 	glm::mat4 getViewMatrix();
 
 private:

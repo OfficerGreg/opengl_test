@@ -134,41 +134,36 @@
   <ItemGroup>
     <ClCompile Include="src\io\Camera.cpp" />
     <ClCompile Include="src\io\Screen.cpp" />
-    <ClCompile Include="src\Renderer.cpp" />
     <ClCompile Include="src\Gui.cpp" />
     <ClCompile Include="src\io\Joystick.cpp" />
     <ClCompile Include="src\io\Keyboard.cpp" />
     <ClCompile Include="src\io\Mouse.cpp" />
-    <ClCompile Include="src\Shader.cpp" />
+    <ClCompile Include="src\graphics\Shader.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\stb.cpp" />
-    <ClCompile Include="src\Window.cpp" />
+    <ClCompile Include="src\graphics\Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="src\shaders\cube_frag.glsl" />
-    <None Include="src\shaders\cube_vert.glsl" />
-    <None Include="src\shaders\fragment_core.glsl" />
-    <None Include="src\shaders\lighting_frag.glsl" />
-    <None Include="src\shaders\lighting_vert.glsl" />
-    <None Include="src\shaders\vertex_core.glsl" />
+    <None Include="src\shaders\fragment.shader" />
+    <None Include="src\shaders\vertex.shader" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\io\Screen.h" />
     <ClInclude Include="src\io\Camera.h" />
-    <ClInclude Include="src\Renderer.h" />
     <ClInclude Include="src\Gui.h" />
     <ClInclude Include="src\Camera.h" />
     <ClInclude Include="src\io\Joystick.h" />
     <ClInclude Include="src\io\Keyboard.h" />
     <ClInclude Include="src\io\Mouse.h" />
-    <ClInclude Include="src\Shader.h" />
+    <ClInclude Include="src\graphics\Shader.h" />
     <ClInclude Include="src\include\stb_image.h" />
-    <ClInclude Include="src\Window.h" />
+    <ClInclude Include="src\graphics\Texture.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="assets\image1.png" />
     <Image Include="assets\image2.jpg" />
+    <Image Include="assets\image3.jpg" />
     <Image Include="src\assets\image1.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
