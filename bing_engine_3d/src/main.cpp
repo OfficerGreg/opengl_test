@@ -2,9 +2,6 @@
 #include <GLFW/glfw3.h>
 #include <stb_image.h>
 
-#include <fstream>
-#include <sstream>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -13,6 +10,8 @@
 
 #include "graphics/block/Block.h"
 
+#include "world/Chunk.h"
+
 #include "io/Keyboard.h"
 #include "io/Mouse.h"
 #include "io/Joystick.h"
@@ -20,10 +19,10 @@
 #include "io/Camera.h"
 
 void processInput(double deltaTime);
+void show_wireframe();
 
 float mixVal = 0.5f;
 
-Joystick mainJ(0);
 Camera Camera::defaultCamera(glm::vec3(0.0f, 0.0f, 3.0f));
 Camera Camera::secondary(glm::vec3(5.0f, 5.0f, 5.0f));
 bool Camera::usingDefault = true;
@@ -34,49 +33,36 @@ double lastFrame = 0.0f; // time of last frame
 Screen screen;
 
 int main() {
-	int success;
-	char infoLog[512];
 
-
-	glfwInit();
-
-	// openGL version 3.3
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_SAMPLES, 4);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-# ifdef __APPLE__
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COPMPAT, GL_TRUE);
-#endif
 	if (!screen.init()) {
 		std::cout << "Could not create window." << std::endl;
 		glfwTerminate();
 		return -1;
 	}
 
-
-
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		glfwTerminate();
 		return -1;
 	}
+
 	screen.setParameters();
 
-	// SHADERS===============================
+	// SHADERS
 	Shader shader("src/shaders/vertex.shader", "src/shaders/fragment.shader");
 
-
+	//Block
 	Block block(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(1.0f));
 	block.init();
+
+	Chunk chunk(glm::vec3(0.0f, 0.0f, 0.0f));
+	chunk.init();
 	
-	mainJ.update();
-	if (mainJ.isPresent()) {
-		std::cout << mainJ.getName() << " is present." << std::endl;
-	}
 
 	while (!screen.shouldClose()) {
+
+		show_wireframe();
+
 		// calculate dt
 		double currentTime = glfwGetTime();
 		deltaTime = currentTime - lastFrame;
@@ -103,7 +89,8 @@ int main() {
 		shader.setMat4("view", view);
 		shader.setMat4("projection", projection);
 
-		block.render(shader);
+		chunk.render(shader);
+		//block.render(shader);
 
 		screen.newFrame();
 
@@ -170,4 +157,13 @@ void processInput(double deltaTime) {
 			Camera::secondary.updateCameraPos(direction, deltaTime);
 		}
 	}
+}
+
+void show_wireframe() {
+	static bool wireframeMode = false;
+	if (Keyboard::keyPressed(GLFW_KEY_G)){
+		wireframeMode = !wireframeMode;
+	}
+	// Set the polygon mode based on the wireframe mode
+	glPolygonMode(GL_FRONT_AND_BACK, wireframeMode ? GL_LINE : GL_FILL);
 }

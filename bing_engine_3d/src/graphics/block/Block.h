@@ -8,7 +8,10 @@ public:
 	glm::vec3 pos;
 	glm::vec3 size;
 
-	Block(glm::vec3 pos, glm::vec3 size)
+	//Block(glm::vec3 pos, glm::vec3 size)
+	//	: pos(pos), size(size)
+	//{}
+	Block(glm::vec3 pos = glm::vec3(0), glm::vec3 size = glm::vec3(1))
 		: pos(pos), size(size)
 	{}
 
@@ -77,7 +80,7 @@ public:
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, pos);
 		model = glm::scale(model, size);
-		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(-55.0f), glm::vec3(0.5f, 0.5f, 0.5f));
+		//model = glm::rotate(model, (float)glfwGetTime() * glm::radians(-55.0f), glm::vec3(0.5f, 0.5f, 0.5f));
 		shader.setMat4("model", model);
 
 		Model::render(shader);

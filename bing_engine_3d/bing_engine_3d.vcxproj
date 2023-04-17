@@ -132,6 +132,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Octree.cpp" />
+    <ClCompile Include="src\world\Chunk.cpp" />
     <ClCompile Include="src\graphics\Mesh.cpp" />
     <ClCompile Include="src\graphics\Model.cpp" />
     <ClCompile Include="src\io\Camera.cpp" />
@@ -151,6 +153,8 @@
     <None Include="src\shaders\vertex.shader" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Octree.h" />
+    <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\graphics\block\Block.h" />
     <ClInclude Include="src\graphics\Mesh.h" />
     <ClInclude Include="src\graphics\Model.h" />
